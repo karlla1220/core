@@ -1,0 +1,22 @@
+name: specduck x2t
+# Builds x2t with specDuck's .doc fixes against the ONLYOFFICE 10.0.0 release libraries (specduck/build-x2t.sh).
+on:
+  push:
+    branches: [specduck/**]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  x2t:
+    runs-on: ubuntu-latest
+    container: ubuntu:22.04
+    steps:
+      - name: Checkout
+        run: |
+          apt-get update -q && apt-get install -y -q git ca-certificates
+          git clone --depth 1 --branch "$GITHUB_REF_NAME" "https://github.com/$GITHUB_REPOSITORY.git" .
+      - run: specduck/build-x2t.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: x2t-linux-amd64
+          path: out/x2t

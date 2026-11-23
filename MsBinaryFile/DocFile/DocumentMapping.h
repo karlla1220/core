@@ -87,7 +87,10 @@ namespace DocFileFormat
 		std::wstring	m_shapeIdOwner;
 		std::wstring	getOLEObject() { return _lastOLEObject; }
 		bool m_bOleInPicture = false;
-        bool bPict = true;
+        // The cp of the OLE preview picture already written by an EMBED field, skipped when reached; -1 none.
+        // (Was a bool that skipped the next picture: when _skipRuns had already skipped the preview, it ate the
+        // next real picture, e.g. every picture right after an equation object in a table.)
+        int _skipPictCp = -1;
 	protected:
 
 		int getListNumCache		(int fc, int fc_end);

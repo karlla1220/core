@@ -569,6 +569,14 @@ namespace DocFileFormat
 			//end run
             m_pXmlWriter->WriteNodeEnd(L"w:r");
 
+			// An equation from this run belongs to its revision: m:oMath may sit inside w:ins/w:del
+			// (EG_RunLevelElements), not inside w:r. Written after the revision, it lost its change marking.
+			if ((Deleted == rev.Type || Inserted == rev.Type) && 0 == _writeAfterRun.find(L"<m:oMath"))
+			{
+				m_pXmlWriter->WriteString(_writeAfterRun);
+				_writeAfterRun.clear();
+			}
+
 			if (Deleted == rev.Type)
 			{
                 m_pXmlWriter->WriteNodeEnd(L"w:del");
@@ -795,7 +803,7 @@ namespace DocFileFormat
 				else
 				{
 					PictureDescriptor pic(chpxObj, m_document->DataStream, 0x7fffffff, m_document->nWordVersion);
-                    bPict = false;
+                    _skipPictCp = cpPic;
 					
                     oleWriter.WriteNodeBegin (L"w:object", true);
                         oleWriter.WriteAttribute( L"w:dxaOrig", FormatUtils::IntToWideString( ( pic.dxaGoal + pic.dxaOrigin ) ) );
@@ -1081,7 +1089,7 @@ namespace DocFileFormat
 			}
 			else if (TextMark::Picture == code && fSpec)
 			{
-                if (bPict)
+                if (cp != _skipPictCp)
                 {
                     PictureDescriptor oPicture (chpx, m_document->nWordVersion > 0 ? m_document->WordDocumentStream : m_document->DataStream, 0x7fffffff, m_document->nWordVersion);
 
@@ -1164,7 +1172,7 @@ namespace DocFileFormat
                     }
                 }
                 else
-                    bPict = true;
+                    _skipPictCp = -1;
 			}
 			else if ((TextMark::AutoNumberedFootnoteReference == code) && fSpec)
 			{
