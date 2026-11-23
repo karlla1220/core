@@ -26,10 +26,11 @@ tar xzf /tmp/icu.tgz -C /tmp
 mkdir -p Common/3dParty/icu/linux_64/build/include/unicode
 cp /tmp/icu/source/common/unicode/*.h /tmp/icu/source/i18n/unicode/*.h Common/3dParty/icu/linux_64/build/include/unicode/
 
-# Boost from the distribution, where boost.pri looks.
-mkdir -p Common/3dParty/boost/build/linux_64
+# Boost from the distribution, where boost.pri looks: static archives only, so x2t needs no boost .so at run time
+# (the release's bin has none).
+mkdir -p Common/3dParty/boost/build/linux_64/lib
 ln -sfn /usr/include Common/3dParty/boost/build/linux_64/include
-ln -sfn /usr/lib/x86_64-linux-gnu Common/3dParty/boost/build/linux_64/lib
+cp /usr/lib/x86_64-linux-gnu/libboost_{regex,system,filesystem,date_time}.a Common/3dParty/boost/build/linux_64/lib/
 
 build() { mkdir -p "/tmp/qb/$1" && (cd "/tmp/qb/$1" && qmake -qt=qt5 "$ROOT/$2" CONFIG+=release && make -j"$JOBS"); }
 build cryptopp Common/3dParty/cryptopp/project/cryptopp.pro
@@ -40,5 +41,8 @@ file "$X2T"
 mkdir -p out && cp "$X2T" out/x2t
 # Smoke test: every library it needs is in the release's bin.
 mkdir -p /tmp/chk && cp -a "$BIN"/. /tmp/chk/ && cp out/x2t /tmp/chk/x2t
-if LD_LIBRARY_PATH=/tmp/chk ldd /tmp/chk/x2t | grep "not found"; then exit 1; fi
+# Every library it needs is in the release's bin or the base system (libc, libm, libpthread, libdl, librt, ld-linux).
+extra=$(LD_LIBRARY_PATH=/tmp/chk ldd /tmp/chk/x2t | grep -v -e "=> /tmp/chk/" -e vdso -e ld-linux \
+  -e "lib\(c\|m\|pthread\|dl\|rt\)\.so" || true)
+if [ -n "$extra" ]; then echo "x2t needs libraries the release does not ship:"; echo "$extra"; exit 1; fi
 objdump -T out/x2t | grep -o 'GLIBC_2\.[0-9]*' | sort -Vu | tail -1
