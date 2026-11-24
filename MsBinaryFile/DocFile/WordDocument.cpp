@@ -1132,12 +1132,15 @@ namespace DocFileFormat
 			{
 				sys_color.SetRGB((unsigned char)(base_color), (unsigned char)(base_color >> 8), (unsigned char)(base_color >> 16));
 			}
-			else if (nColorIndex < 25)
+			else if (nColorIndex < 20)
 			{
-				if (type != 4 && (nColorIndex == 7 || nColorIndex == 8 || nColorIndex == 9 || nColorIndex == 14 || 
-					nColorIndex == 17 || nColorIndex == 18 || nColorIndex == 19 || nColorIndex == 23)) return;
-
-				sys_color.SetRGB((unsigned char)(systemColors[nColorIndex] >> 16), (unsigned char)(systemColors[nColorIndex] >> 8), (unsigned char)(systemColors[nColorIndex]));
+				// specduck: Word stores the index in the MS-ODRAW system colour order (MSOSYSCOLORINDEX less 0xF0:
+				// buttonFace, windowText, menu, highlight, ...; checked with Word's own .doc), not Windows COLOR_*:
+				// windowText came out teal (COLOR_BACKGROUND). Windows default values, as authors see them.
+				static const _UINT32 msoSystemColors[20] = {
+					0xF0F0F0, 0x000000, 0xF0F0F0, 0x0078D7, 0xFFFFFF, 0x000000, 0x99B4D1, 0xFFFFFF, 0xA0A0A0, 0x000000,
+					0x6D6D6D, 0xBFCDDB, 0x000000, 0xFFFFE1, 0x000000, 0x000000, 0xC8C8C8, 0xFFFFFF, 0x646464, 0xE3E3E3};
+				sys_color.SetRGB((unsigned char)(msoSystemColors[nColorIndex] >> 16), (unsigned char)(msoSystemColors[nColorIndex] >> 8), (unsigned char)(msoSystemColors[nColorIndex]));
 			}
 			else return;
 

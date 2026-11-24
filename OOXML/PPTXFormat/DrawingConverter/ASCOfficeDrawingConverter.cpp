@@ -634,7 +634,26 @@ namespace NS_DWC_Common
 			else
 				str = colorStr.substr(0, pos);
 
-			switch (str[0])
+			// specduck: the CSS system colours VML uses (Word writes strokecolor="windowText"; the table below had it as
+			// "windowsText"), case-insensitive, with the Windows default values
+			static const std::map<std::wstring, int> system = {
+				{L"activeborder", 0xB4B4B4}, {L"activecaption", 0x99B4D1}, {L"appworkspace", 0xABABAB}, {L"background", 0x000000},
+				{L"buttonface", 0xF0F0F0}, {L"buttonhighlight", 0xFFFFFF}, {L"buttonshadow", 0xA0A0A0}, {L"buttontext", 0x000000},
+				{L"captiontext", 0x000000}, {L"graytext", 0x6D6D6D}, {L"highlight", 0x0078D7}, {L"highlighttext", 0xFFFFFF},
+				{L"inactiveborder", 0xF4F7FC}, {L"inactivecaption", 0xBFCDDB}, {L"inactivecaptiontext", 0x000000},
+				{L"infobackground", 0xFFFFE1}, {L"infotext", 0x000000}, {L"menu", 0xF0F0F0}, {L"menutext", 0x000000},
+				{L"scrollbar", 0xC8C8C8}, {L"threeddarkshadow", 0x696969}, {L"threedface", 0xF0F0F0}, {L"threedhighlight", 0xFFFFFF},
+				{L"threedlightshadow", 0xE3E3E3}, {L"threedshadow", 0xA0A0A0}, {L"window", 0xFFFFFF}, {L"windowframe", 0x646464},
+				{L"windowtext", 0x000000}};
+			std::wstring lower = str;
+			std::transform(lower.begin(), lower.end(), lower.begin(), ::towlower);
+			std::map<std::wstring, int>::const_iterator sys = system.find(lower);
+			if (sys != system.end())
+			{
+				RGB = sys->second;
+				bSet = true;
+			}
+			else switch (str.empty() ? L' ' : str[0])
 			{
 			case 'a':
 				if (str == L"aliceBlue") { RGB = 0xF0F8FF; bSet = true; break; } // (Alice Blue Preset Color)		Specifies a color with RGB value (240,248,255)
@@ -2182,8 +2201,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 		{
 			bPicture = true;
 		}
-		else if (pPPTShape->m_eType == PPTShapes::sptCNotchedCircularArrow)
+		else if (pPPTShape->m_eType == PPTShapes::sptCNotchedCircularArrow && oNodeShape.GetAttribute(L"path").empty())
 		{
+			// specduck: only the obsolete type itself; Word writes o:spt="100" on every freeform with its own path
 			bHidden = true;
 		}
         std::wstring strXmlPPTX;
@@ -3435,10 +3455,10 @@ void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::
 		std::vector<std::wstring> oArray;
         boost::algorithm::split(oArray, strCoordOrigin, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
 
-		if (oArray.size() >= 2)
+		if (oArray.size() >= 1)	// specduck: Word writes coordorigin="13639" when y is 0
 		{
-			lCoordOriginX = XmlUtils::GetInteger(oArray[0]);
-			lCoordOriginY = XmlUtils::GetInteger(oArray[1]);
+			lCoordOriginX = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
+			lCoordOriginY = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
 		}
 	}
 
@@ -3560,10 +3580,10 @@ void CDrawingConverter::LoadCoordPos(XmlUtils::CXmlNode& oNode, CShapePtr pShape
 			std::vector<std::wstring> oArray;
             boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
 
-			if (oArray.size() >= 2)
+			if (oArray.size() >= 1)	// specduck: coordorigin="13639" is x 13639, y 0
 			{
-                pShape->m_dXLogic = XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = XmlUtils::GetInteger(oArray[1]);
+                pShape->m_dXLogic = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
+                pShape->m_dYLogic = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
 			}
 		}
 	}
@@ -3575,10 +3595,10 @@ void CDrawingConverter::LoadCoordPos(XmlUtils::CXmlNode& oNode, CShapePtr pShape
 			std::vector<std::wstring> oArray;
             boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
 
-			if (oArray.size() >= 2)
+			if (oArray.size() >= 1)	// specduck: coordorigin="13639" is x 13639, y 0
 			{
-                pShape->m_dXLogic = XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = XmlUtils::GetInteger(oArray[1]);
+                pShape->m_dXLogic = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
+                pShape->m_dYLogic = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
 			}
 		}
 	}
@@ -4501,8 +4521,9 @@ static std::wstring FillImagePath(OOX::IFileContainer* rels, const std::wstring&
 	smart_ptr<OOX::Image> image = rels->Get<OOX::Image>(OOX::RId(rid));
 	return image.IsInit() ? image->filename().GetPath() : L"";
 }
-// specduck: a pattern bitmap no preset matches, in its colours: light pixels foreground, dark ones background (as
-// Word draws it; sdkjs ignores a duotone). The file is written to the media temp folder; empty when that fails.
+// specduck: a pattern bitmap in its colours: light pixels foreground, dark ones background, its top-left 8x8 only (a
+// pattern brush; Word writes its patterns as 10x10 GIFs), as Word draws it (sdkjs ignores a duotone and draws presets
+// at a scale of its own). The file is written to the media temp folder; empty when that fails.
 static std::wstring RecolorPattern(const std::wstring& path, const std::wstring& tempDir, const ODRAW::CColor& fg, const ODRAW::CColor& bg)
 {
 	static int counter = 0;
@@ -4510,15 +4531,23 @@ static std::wstring RecolorPattern(const std::wstring& path, const std::wstring&
 	if (path.empty() || tempDir.empty() || !frame.OpenFile(path)) return L"";
 	int stride = std::abs(frame.get_Stride());
 	bool rgba = frame.get_IsRGBA();
-	for (int y = 0; y < frame.get_Height(); ++y)
-		for (int x = 0; x < frame.get_Width(); ++x)
+	int w = (std::min)(frame.get_Width(), 8), h = (std::min)(frame.get_Height(), 8);
+	// the 8x8 cell repeated 32 times each way: sdkjs leaves a seam at every tile edge, which a 8-pixel tile made a grid
+	const int repeat = 32, W = w * repeat, H = h * repeat;
+	BYTE* data = new BYTE[4 * W * H];
+	for (int y = 0; y < H; ++y)
+		for (int x = 0; x < W; ++x)
 		{
-			BYTE* px = frame.get_Data() + y * stride + 4 * x;
+			const BYTE* px = frame.get_Data() + (y % h) * stride + 4 * (x % w);
 			const ODRAW::CColor& c = (px[0] * 114 + px[1] * 587 + px[2] * 299 < 128000) ? bg : fg;
-			px[0] = rgba ? c.R : c.B; px[1] = c.G; px[2] = rgba ? c.B : c.R; px[3] = 255;
+			BYTE* out = data + 4 * (y * W + x);
+			out[0] = rgba ? c.R : c.B; out[1] = c.G; out[2] = rgba ? c.B : c.R; out[3] = 255;
 		}
+	CBgraFrame tile;
+	tile.put_Width(W); tile.put_Height(H); tile.put_Stride(4 * W); tile.put_IsRGBA(rgba);
+	tile.put_Data(data);	// the frame frees it
 	std::wstring out = tempDir + FILE_SEPARATOR_STR + L"specduck-pattern-" + std::to_wstring(++counter) + L".png";
-	return frame.SaveFile(out, 4) ? out : L"";
+	return tile.SaveFile(out, 4) ? out : L"";
 }
 
 // specduck: Word's VML pattern bitmaps, the top-left 8x8 of the 10x10 GIF Word writes for each DrawingML pattern preset
@@ -4753,7 +4782,9 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 			XmlMacroReadAttributeBase(oNodeFill, L"o:relid", sRid);
 		}
 		std::wstring sFillPath = sRid.is_init() ? FillImagePath(GetRelsPtr(), *sRid) : L"";
-		if (sRid.is_init() && oType.is_init() && oType->GetValue() == SimpleTypes::filltypePattern)
+		// specduck: a pattern is drawn as its own bitmap recoloured (below), which keeps Word's cell size; the preset is
+		// only for when that cannot be written (sdkjs draws presets at a scale of its own)
+		if (sRid.is_init() && oType.is_init() && oType->GetValue() == SimpleTypes::filltypePattern && GetTempPath().empty())
 		{
 			std::wstring prst = PresetPattern(sFillPath);
 			if (!prst.empty())
@@ -4802,7 +4833,12 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 					&& NS_DWC_Common::getColorFromString(sColor2.is_init() ? *sColor2 : std::wstring(L"white"), bg))
 					recolored = RecolorPattern(sFillPath, GetTempPath(), fg, bg);
 				if (!recolored.empty())
+				{
 					pBlipFill->blip->dataFilepathImage = recolored;
+					// a pattern pixel is 0.625 pt in Word (an 8-pixel cell 5 pt, measured), unlike a tiled picture
+					pBlipFill->tile->sx = (int)(100000 * 96 / 115.2);
+					pBlipFill->tile->sy = pBlipFill->tile->sx;
+				}
 				else if (oType->GetValue() == SimpleTypes::filltypePattern)
 				{
 					PPTX::Logic::Duotone* pDuotone = new PPTX::Logic::Duotone();
