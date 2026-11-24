@@ -44,6 +44,9 @@
 #include "CharacterPropertyExceptions.h"
 #include "TableInfo.h"
 #include "TablePropertyExceptions.h"
+#include "SprmTDefTable.h"
+#include <map>
+#include <cstdlib>
 #include "AbstractOpenXmlMapping.h"
 #include "TableRowPropertiesMapping.h"
 #include "TableCellPropertiesMapping.h"
@@ -114,6 +117,11 @@ namespace DocFileFormat
 		std::vector<std::vector<wchar_t> >* splitCharList( std::vector<wchar_t>* chars, std::vector<int>* splitIndices );
 		int writeTable		( int initialCp, unsigned int nestingLevel );
 		bool buildTableGrid( int initialCp, unsigned int nestingLevel, std::vector<short>& grid);
+		// Left edge of each table grid (its first boundary), by grid, set by buildTableGrid: rows and cells are
+		// placed against it (gridBefore/gridAfter, spans), not against their own first boundary.
+		std::map<const std::vector<short>*, short> _gridOrigins;
+		void rowGridBounds( TablePropertyExceptions* tapx, const std::vector<short>* grid, int& before, int& after );
+		bool gridOrigin( const std::vector<short>* grid, short& origin ) const;
 		int findRowEndFc		( int initialCp, int& rowEndCp, unsigned int nestingLevel );
 		int findRowEndFc		( int initialCp, unsigned int nestingLevel );
 

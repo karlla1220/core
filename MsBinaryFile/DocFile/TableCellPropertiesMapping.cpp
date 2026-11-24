@@ -207,7 +207,7 @@ namespace DocFileFormat
 							{
 								_gridSpan = 1;
 
-								nComputedCellWidths += (tdef.rgdxaCenter[_cellIndex + 1] - tdef.rgdxaCenter[0]);
+								nComputedCellWidths += (tdef.rgdxaCenter[_cellIndex + 1] - (hasGridOrigin ? gridOrigin : tdef.rgdxaCenter[0]));
 								nComputedCellWidth += bUseWidth ? tdef.rgTc80[_cellIndex].wWidth :
 									(tdef.rgdxaCenter[_cellIndex + 1] - tdef.rgdxaCenter[_cellIndex]);
 							}

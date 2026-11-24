@@ -57,5 +57,7 @@ namespace DocFileFormat
 	  TableRowPropertiesMapping( XMLTools::CStringXmlWriter* writer, CharacterPropertyExceptions* rowEndChpx );
 	  virtual ~TableRowPropertiesMapping();
 	  virtual void Apply( IVisitable* visited );
+
+	  int gridBefore = 0, gridAfter = 0;	// grid columns before the first cell and after the last
   };
 }

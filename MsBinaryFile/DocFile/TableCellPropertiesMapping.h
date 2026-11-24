@@ -59,6 +59,11 @@ namespace DocFileFormat
 	class TableCellPropertiesMapping : public PropertiesMapping, public IMapping
 	{
 	public:	
+		// The table grid's left edge (DocumentMapping::buildTableGrid): cell positions are measured from it, so a row
+		// that starts after it (gridBefore) lines up with the grid; unset, from the row's own first boundary.
+		short gridOrigin = 0;
+		bool hasGridOrigin = false;
+
 
 		virtual ~TableCellPropertiesMapping();
 		TableCellPropertiesMapping (XMLTools::CStringXmlWriter* pWriter, const std::vector<short>* grid, int gridIndex, int cellIndex, unsigned int depth);

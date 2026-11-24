@@ -287,6 +287,9 @@ namespace DocFileFormat
 		{
 			m_pXmlWriter->WriteString(_tblPrEx->GetXMLString());
 		}
+		if (gridBefore > 0) appendValueElement( _trPr, L"gridBefore", FormatUtils::IntToWideString(gridBefore), true );
+		if (gridAfter > 0)  appendValueElement( _trPr, L"gridAfter",  FormatUtils::IntToWideString(gridAfter),  true );
+
 		if ( ( _trPr->GetChildCount() > 0 ) || ( _trPr->GetAttributeCount() > 0 ) )
 		{
 			m_pXmlWriter->WriteString( _trPr->GetXMLString() );

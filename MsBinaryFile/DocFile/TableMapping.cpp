@@ -125,6 +125,7 @@ namespace DocFileFormat
 	//convert the properties
 		XMLTools::CStringXmlWriter writerTcPr;
 		TableCellPropertiesMapping tcpMapping(&writerTcPr, grid, gridIndex, nCellIndex, depth);
+		if ( documentMapping->gridOrigin( grid, tcpMapping.gridOrigin ) ) tcpMapping.hasGridOrigin = true;
 		tcpMapping.SetCellPosition(bFirstRow, bLastRow, bLastCell);
 
 		if ( tapx != NULL )
@@ -230,7 +231,12 @@ namespace DocFileFormat
 			std::vector<CharacterPropertyExceptions*>* chpxs = documentMapping->m_document->GetCharacterPropertyExceptions( fcRowEnd, fcRowEnd + 1 );
 			if (chpxs)
 			{
+				int gridAfter = 0;
+				documentMapping->rowGridBounds( &tapx, grid, gridIndex, gridAfter );
+
 				TableRowPropertiesMapping trpMapping( documentMapping->GetXMLWriter(), *(chpxs->begin()) );
+				trpMapping.gridBefore	= gridIndex;
+				trpMapping.gridAfter	= gridAfter;
 				tapx.Convert( &trpMapping );
 			}
 

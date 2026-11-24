@@ -1634,6 +1634,8 @@ namespace DocFileFormat
 
 		if ( !mapBoundaries.empty() )
 		{
+			_gridOrigins[&grid] = mapBoundaries.begin()->first;
+
 			std::map<short, short>::iterator it = mapBoundaries.begin(); 
 			std::map<short, short>::iterator it_next = it; it_next++;
 
@@ -1799,6 +1801,48 @@ namespace DocFileFormat
 		return fc;
 	}
 
+	bool DocumentMapping::gridOrigin( const std::vector<short>* grid, short& origin ) const
+	{
+		std::map<const std::vector<short>*, short>::const_iterator it = _gridOrigins.find(grid);
+		if (it == _gridOrigins.end()) return false;
+		origin = it->second;
+		return true;
+	}
+
+	/// The grid columns before a row's first cell and after its last (w:gridBefore, w:gridAfter): its first and last
+	/// boundaries (from the tDef in force, the last) against the grid lines, the nearest line each (buildTableGrid
+	/// drops columns of 2 twips or less, so lines can be a few twips off).
+	void DocumentMapping::rowGridBounds( TablePropertyExceptions* tapx, const std::vector<short>* grid, int& before, int& after )
+	{
+		before = after = 0;
+		short origin = 0;
+		if (!tapx || !tapx->grpprl || !grid || grid->empty() || !gridOrigin(grid, origin)) return;
+
+		std::vector<SinglePropertyModifier>::iterator itDef = tapx->grpprl->end();
+		for (std::vector<SinglePropertyModifier>::iterator iter = tapx->grpprl->begin(); iter != tapx->grpprl->end(); ++iter)
+		{
+			if (iter->OpCode == sprmTDefTable || iter->OpCode == sprmOldTDefTable) itDef = iter;
+		}
+		if (itDef == tapx->grpprl->end()) return;
+
+		SprmTDefTable tdef(itDef->Arguments, itDef->argumentsSize);
+		if (tdef.rgdxaCenter.size() < 2) return;
+
+		std::vector<int> lines(1, origin);
+		for (size_t i = 0; i < grid->size(); ++i) lines.push_back(lines.back() + grid->at(i));
+
+		int first = tdef.rgdxaCenter.front(), last = tdef.rgdxaCenter.back();
+		size_t iFirst = 0, iLast = 0;
+		for (size_t i = 1; i < lines.size(); ++i)
+		{
+			if (abs(lines[i] - first) < abs(lines[iFirst] - first)) iFirst = i;
+			if (abs(lines[i] - last)  < abs(lines[iLast]  - last))  iLast = i;
+		}
+		if (iLast <= iFirst) return;
+		before	= (int)iFirst;
+		after	= (int)(lines.size() - 1 - iLast);
+	}
+
 	/// Writes the table row that starts at the given cp value and ends at the next row end mark
 	int DocumentMapping::writeTableRow(int initialCp, std::vector<short>* grid, unsigned int nestingLevel)
 	{
@@ -1816,12 +1860,17 @@ namespace DocFileFormat
 		TablePropertyExceptions tapx( findValidPapx( fcRowEnd ), m_document->DataStream, m_document->nWordVersion);
 
 		std::vector<CharacterPropertyExceptions*>* chpxs = m_document->GetCharacterPropertyExceptions( fcRowEnd, fcRowEnd + 1 );
+		int gridBefore = 0, gridAfter = 0;
+		rowGridBounds( &tapx, grid, gridBefore, gridAfter );
+
 		TableRowPropertiesMapping* trpMapping = new TableRowPropertiesMapping( m_pXmlWriter, *(chpxs->begin()) );
+		trpMapping->gridBefore	= gridBefore;
+		trpMapping->gridAfter	= gridAfter;
 		tapx.Convert( trpMapping );
 		
 		RELEASEOBJECT( trpMapping );
 
-		int gridIndex = 0;
+		int gridIndex = gridBefore;
 		int cellIndex = 0;
 
 		if ( nestingLevel > 1 )
@@ -1877,6 +1926,7 @@ namespace DocFileFormat
 
 		XMLTools::CStringXmlWriter writerTcPr;
 		TableCellPropertiesMapping* tcpMapping = new TableCellPropertiesMapping( &writerTcPr, grid, gridIndex, cellIndex, nestingLevel );
+		if ( gridOrigin( grid, tcpMapping->gridOrigin ) ) tcpMapping->hasGridOrigin = true;
 
 		if ( tapx != NULL )
 		{
