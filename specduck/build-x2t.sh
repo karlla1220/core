@@ -77,3 +77,7 @@ extra=$(LD_LIBRARY_PATH="$WORK/chk" ldd "$WORK/chk/x2t" | grep -v -e "=> $WORK/c
   -e "lib\(c\|m\|pthread\|dl\|rt\)\.so" || true)
 if [ -n "$extra" ]; then echo "x2t needs libraries the release does not ship:"; echo "$extra"; exit 1; fi
 objdump -T out/x2t | grep -o 'GLIBC_2\.[0-9]*' | sort -Vu | tail -1
+
+# The .doc reader fixes, checked on one public CR each (specduck/tests/samples/SOURCES.md): fails the build when one is
+# undone.
+python3 specduck/tests/check_doc.py "$WORK/chk/x2t" specduck/tests/samples
