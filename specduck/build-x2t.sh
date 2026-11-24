@@ -3,7 +3,7 @@
 # libraries of the ONLYOFFICE Document Server release it is based on. specDuck replaces only x2t in that release's
 # FileConverter/bin; every .so stays the release's. Runs in ubuntu:22.04 (glibc 2.35), from the repository root.
 set -euo pipefail
-# Env: WORK (downloads and object files, kept between runs: a rerun rebuilds only what changed), JOBS, SKIP_APT=1.
+# Env: QMAKE_EXTRA (see build()), WORK (downloads and object files, kept between runs: a rerun rebuilds only what changed), JOBS, SKIP_APT=1.
 # CI uses the defaults in ubuntu:22.04; on a developer machine it is the same script with WORK kept.
 RELEASE=10.0.0 ICU=74_2
 ARCH=$(dpkg --print-architecture)
@@ -50,7 +50,9 @@ for l in regex system filesystem date_time; do  # boost_system is header-only fr
   else ar rcs "Common/3dParty/boost/build/linux_64/lib/libboost_$l.a"; fi
 done
 
-build() { mkdir -p "$WORK/qb/$1" && (cd "$WORK/qb/$1" && qmake -qt=qt5 "$ROOT/$2" CONFIG+=release && make -j"$JOBS"); }
+# QMAKE_EXTRA: more qmake arguments, e.g. on a newer gcc that no longer pulls in headers the tree forgets:
+#   QMAKE_EXTRA="QMAKE_CXXFLAGS+=-include cfloat -include cstdint"
+build() { mkdir -p "$WORK/qb/$1" && (cd "$WORK/qb/$1" && qmake -qt=qt5 "$ROOT/$2" CONFIG+=release ${QMAKE_EXTRA:+"$QMAKE_EXTRA"} && make -j"$JOBS"); }
 build cryptopp Common/3dParty/cryptopp/project/cryptopp.pro
 build x2t X2tConverter/build/Qt/X2tSLN.pro
 
