@@ -270,7 +270,7 @@ namespace DocFileFormat
 		// !!!TODO!!!
 		if ( unique )
 		{
-			node->RemoveChild( ele );    
+			while ( node->RemoveChildByName( ele.GetName() ) ) {}	// a later sprm overrides: drop every earlier value
 		}
 
 		node->AppendChild( ele );
@@ -341,7 +341,7 @@ namespace DocFileFormat
 		// !!!TODO!!!
 		if ( unique )
 		{
-			node->RemoveChild( *ele );
+			while ( node->RemoveChildByName( ele->GetName() ) ) {}	// a later sprm overrides: drop every earlier value
 		}
 
 		node->AppendChild( *ele );
@@ -367,7 +367,7 @@ namespace DocFileFormat
 		// !!!TODO!!!
 		if ( unique )
 		{
-			node->RemoveChild( *ele );
+			while ( node->RemoveChildByName( ele->GetName() ) ) {}	// a later sprm overrides: drop every earlier value
 		}
 
 		node->AppendChild( *ele );
@@ -393,7 +393,7 @@ namespace DocFileFormat
 		// !!!TODO!!!
 		if ( unique )
 		{
-			node->RemoveChild( *ele );
+			while ( node->RemoveChildByName( ele->GetName() ) ) {}	// a later sprm overrides: drop every earlier value
 		}
 
 		node->AppendChild( *ele );
@@ -419,7 +419,7 @@ namespace DocFileFormat
 		// !!!TODO!!!
 		if ( unique )
 		{
-			node->RemoveChild( *ele );
+			while ( node->RemoveChildByName( ele->GetName() ) ) {}	// a later sprm overrides: drop every earlier value
 		}
 
 		node->AppendChild( *ele );
@@ -781,7 +781,7 @@ namespace DocFileFormat
 
 		if ( unique )
 		{
-			node->RemoveChild( ele ); 
+			while ( node->RemoveChildByName( ele.GetName() ) ) {}	// a later sprm overrides: drop every earlier value 
 		}
 
 		node->AppendChild( ele );
