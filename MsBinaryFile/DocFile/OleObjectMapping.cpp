@@ -56,7 +56,10 @@ namespace DocFileFormat
 			if (ole->isEquation) ole->ClipboardFormat = L"Equation";
 			else if (ole->ClipboardFormat.empty()) ole->ClipboardFormat = L"MSWordDocx";
 
-			ole->Program = L"Word.Document";
+			// A package of a known program (a Visio 2013 drawing's .vsdx) keeps its ProgID: "Word.Document" told a
+			// reader the object was a Word document, and Visio drawings were not read as drawings.
+			if (ole->isEmbedded || ole->isEquation || ole->Program.empty())
+				ole->Program = L"Word.Document";
 		}
 		m_pXmlWriter->WriteNodeBegin(L"o:OLEObject", TRUE);
 
