@@ -65,6 +65,8 @@
 #include "../../DocxFormat/Diagram/DiagramDrawing.h"
 #include "../../DocxFormat/Drawing/DrawingExt.h"
 #include "../../DocxFormat/Media/Image.h"
+#include "../../../MsBinaryFile/DocFile/WordShapeTypes.h"
+#include "WordPresetGeometry.h"
 #include "../../../DesktopEditor/raster/BgraFrame.h"
 #include "../../Common/SimpleTypes_Base.h"
 #include "../../Common/SimpleTypes_Vml.h"
@@ -1324,6 +1326,34 @@ void CDrawingConverter::AddBinData(XmlUtils::CXmlNode& oNode)
 	nullable<OOX::Logic::CBinData> data(oNode);
 	m_mapBinDatas.insert(std::make_pair(name, data));
 }
+// specduck: whether a shapetype is Word's own definition of its legacy type (WordShapeTypes.h): its path, adj, formulas,
+// text box and limo. Word draws such a shape with its built-in look (the preset geometry: a cube's shaded faces, a
+// bracket pair's round corners) and any other definition from its path, so only these become preset geometry.
+static bool IsWordBuiltinShapeType(XmlUtils::CXmlNode& node, unsigned int spt)
+{
+	std::map<unsigned int, const wchar_t*>::const_iterator word = DocFileFormat::WordShapeTypes().find(spt);
+	if (word == DocFileFormat::WordShapeTypes().end())
+		return false;
+	XmlUtils::CXmlNode root, ref;
+	if (!root.FromXmlString(L"<r xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">"
+			+ std::wstring(word->second) + L"</r>") || !root.GetNode(L"v:shapetype", ref))
+		return false;
+	auto key = [](XmlUtils::CXmlNode& n) {
+		std::wstring k = n.GetAttribute(L"path") + L"|" + n.GetAttribute(L"adj") + L"|";
+		XmlUtils::CXmlNode formulas, path;
+		if (n.GetNode(L"v:formulas", formulas))
+		{
+			std::vector<XmlUtils::CXmlNode> fs;
+			formulas.GetNodes(L"v:f", fs);
+			for (XmlUtils::CXmlNode& f : fs) k += f.GetAttribute(L"eqn") + L";";
+		}
+		if (n.GetNode(L"v:path", path))
+			k += L"|" + path.GetAttribute(L"textboxrect") + L"|" + path.GetAttribute(L"limo");
+		return k;
+	};
+	return key(node) == key(ref);
+}
+
 void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 {
 	std::wstring strId = oNode.GetAttribute(L"id");
@@ -1350,7 +1380,11 @@ void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 		
 		LoadCoordSize(oNode, pS);
 
-		m_mapShapeTypes.insert(std::make_pair(strId, pS));			
+		m_mapShapeTypes.insert(std::make_pair(strId, pS));
+		std::wstring sSpt = oNode.GetAttribute(L"o:spt");
+		if (!sSpt.empty() && std::all_of(sSpt.begin(), sSpt.end(), ::iswdigit)
+			&& IsWordBuiltinShapeType(oNode, (unsigned int)XmlUtils::GetInteger(sSpt)))
+			m_mapBuiltinShapeTypes[strId] = (unsigned int)XmlUtils::GetInteger(sSpt);			
 	}
 }
 void CDrawingConverter::AddShapeType(const std::wstring& bsXml)
@@ -1840,6 +1874,7 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 	bool bStroked			= true;
 	bool bHidden			= false;
 	bool bShapeTypeSet		= true;
+	unsigned int nBuiltinSpt = 0;	// specduck: the shape's legacy type, when its shapetype is Word's own
 
     std::wstring strStyleAdvenced = L"";
 
@@ -2059,6 +2094,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			strType = strType.substr(1);
 
 			std::map<std::wstring, CShapePtr>::iterator pFind = m_mapShapeTypes.find(strType);
+			std::map<std::wstring, unsigned int>::iterator pBuiltin = m_mapBuiltinShapeTypes.find(strType);
+			if (pBuiltin != m_mapBuiltinShapeTypes.end())
+				nBuiltinSpt = pBuiltin->second;
 			if (m_mapShapeTypes.end() != pFind)
 			{
                 CBaseShapePtr base_shape_type = pFind->second->getBaseShape();
@@ -2187,6 +2225,19 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			else
 			{
 				strXmlPPTX = oShapeElem.ConvertPPTShapeToPPTX(true);
+				if (nBuiltinSpt)
+				{
+					// specduck: Word draws its own shapetype as the preset (see IsWordBuiltinShapeType)
+					PPTX::CCSS oSize;
+					std::wstring sSizeStyle = oNodeShape.GetAttribute(L"style");
+					oSize.LoadFromString2(sSizeStyle);
+					SimpleTypes::CPoint parser;
+					double w = oSize.m_mapSettings.count(L"width") ? parser.FromString(oSize.m_mapSettings[L"width"]) : 0;
+					double h = oSize.m_mapSettings.count(L"height") ? parser.FromString(oSize.m_mapSettings[L"height"]) : 0;
+					std::wstring preset = WordPresetGeometry(nBuiltinSpt, pPPTShape->m_arAdjustments, w, h);
+					if (!preset.empty())
+						strXmlPPTX = preset;
+				}
 
 				// in old shapes text rotates separately
 				pShape->oTextBoxBodyPr->upright = true;
@@ -4643,6 +4694,13 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 	}
 
 	XmlUtils::CXmlNode oNodeFill = oNode.ReadNode(L"v:fill");
+	// specduck: <v:fill on="f"/> turns the fill off like filled="f"
+	if (oNodeFill.IsValid() && (oNodeFill.GetAttribute(L"on") == L"f" || oNodeFill.GetAttribute(L"on") == L"false"))
+	{
+		pPPTShape->m_bIsFilled = false;
+		pSpPr->Fill.m_type = PPTX::Logic::UniFill::noFill;
+		pSpPr->Fill.Fill = new PPTX::Logic::NoFill();
+	}
 	if (pPPTShape->m_bIsFilled && oNodeFill.IsValid() && !pPPTShape->IsWordArt())
 	{
 		nullable_string sOpacity2;
