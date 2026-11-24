@@ -61,7 +61,15 @@ if [ -n "${CXX_EXTRA:-}" ]; then
   QARGS+=("QMAKE_CXX=$WORK/cxx" "QMAKE_LINK=$WORK/cxx" -after "CONFIG-=precompile_header")
 fi
 # Three levels below WORK: subprojects build at ../../../<their path>, which stays inside WORK.
-build() { local d="$WORK/qb/$1/b/q"; mkdir -p "$d" && (cd "$d" && qmake -qt=qt5 "$ROOT/$2" "${QARGS[@]}" && make -j"$JOBS"); }
+# Compiler output goes to $WORK/make-<name>.log (hundreds of thousands of warning lines buried the check's result in
+# the CI log); its tail is printed when the build fails.
+build() {
+  local d="$WORK/qb/$1/b/q" log="$WORK/make-$1.log"
+  mkdir -p "$d"
+  if ! (cd "$d" && qmake -qt=qt5 "$ROOT/$2" "${QARGS[@]}" && make -j"$JOBS") > "$log" 2>&1; then
+    grep -m 20 -E "error:|Error [0-9]" "$log" || true; tail -40 "$log"; return 1
+  fi
+}
 build cryptopp Common/3dParty/cryptopp/project/cryptopp.pro
 # x2t's Makefile does not depend on the static libraries: drop it so a rebuilt library is linked in.
 rm -f build/bin/linux_64/x2t
