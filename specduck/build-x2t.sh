@@ -56,7 +56,8 @@ done
 QARGS=(CONFIG+=release)
 if [ -n "${CXX_EXTRA:-}" ]; then
   printf '#!/bin/sh\nexec g++ %s "$@"\n' "$CXX_EXTRA" > "$WORK/cxx" && chmod +x "$WORK/cxx"
-  QARGS+=("QMAKE_CXX=$WORK/cxx" "QMAKE_LINK=$WORK/cxx")
+  # precompiled headers off: their -include rule and the wrapper's do not mix (a PCH that is never built)
+  QARGS+=("QMAKE_CXX=$WORK/cxx" "QMAKE_LINK=$WORK/cxx" "CONFIG-=precompile_header")
 fi
 # Three levels below WORK: subprojects build at ../../../<their path>, which stays inside WORK.
 build() { local d="$WORK/qb/$1/b/q"; mkdir -p "$d" && (cd "$d" && qmake -qt=qt5 "$ROOT/$2" "${QARGS[@]}" && make -j"$JOBS"); }
