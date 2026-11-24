@@ -57,6 +57,7 @@ namespace DocFileFormat
 		void Apply( IVisitable* visited );
 		/// Generates a style id for custom style names or returns the build-in identifier for build-in styles.
 		static std::wstring MakeStyleId( StyleSheetDescription* std );
+		static bool IsStyleIdTaken( const std::wstring& id );
 		static std::map<std::wstring, std::wstring> m_mapStyleId;
         static NSCriticalSection::CRITICAL_SECTION_SMART m_mapStyleIdLock;
 		virtual ~StyleSheetMapping();

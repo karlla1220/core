@@ -35,6 +35,7 @@
 
 
 #include "StyleSheetMapping.h"
+#include <cwctype>
 
 namespace DocFileFormat
 {
@@ -239,6 +240,20 @@ namespace DocFileFormat
 	/*========================================================================================================*/
 
 	/// Generates a style id for custom style names or returns the build-in identifier for build-in styles.
+	// An id already given to a user style, or a built-in style's id.
+	bool StyleSheetMapping::IsStyleIdTaken( const std::wstring& id )
+	{
+		for (std::map<std::wstring, std::wstring>::const_iterator it = m_mapStyleId.begin(); it != m_mapStyleId.end(); ++it)
+		{
+			if (it->second == id) return true;
+		}
+		for (int i = 0; i < 159; ++i)
+		{
+			if (id == StyleIdentifierMap[i]) return true;
+		}
+		return false;
+	}
+
 	std::wstring StyleSheetMapping::MakeStyleId( StyleSheetDescription* std )
 	{
 		std::wstring ret;
@@ -267,10 +282,19 @@ namespace DocFileFormat
 				}
 				else
 				{
-					//genarate new
+					// Word's id for a user style: its name without spaces and punctuation ("TAH", "CRCoverPage").
+					// Was "UserStyle_<n>", which hid the style a reader looks for by id (3GPP's TAH, TH, B1 ...).
 					m_mapStyleIdLock.Enter();
-					int nIndex = m_mapStyleId.size();
-                    ret = L"UserStyle_" + FormatUtils::IntToWideString( nIndex );
+					std::wstring base;
+					for (size_t i = 0; i < std->xstzName.size(); ++i)
+					{
+						wchar_t c = std->xstzName[i];
+						if (iswalnum(c) || c == L'_' || c > 0x7F) base += c;
+					}
+					if (base.empty()) base = L"UserStyle";
+					ret = base;
+					for (int n = 1; IsStyleIdTaken(ret); ++n)
+						ret = base + FormatUtils::IntToWideString( n );
 					std::pair< std::wstring, std::wstring > p( std->xstzName, ret);
 					m_mapStyleId.insert(p);
 					m_mapStyleIdLock.Leave();
