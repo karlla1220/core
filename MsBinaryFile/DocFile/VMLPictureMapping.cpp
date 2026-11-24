@@ -237,6 +237,14 @@ namespace DocFileFormat
 		std::wstring sTempXmlFile = NSDirectory::CreateTempFileWithUniqueName(sTempFolder, L"emb");
 
 		std::string xmlEmbedded = UnwrapAmlAnnotations(std::string(data.first.get(), data.second));
+		// The runs' Word 2003 character properties (w:kern, w:sz-cs, wx:font ...) made the OMML reader drop the m:t
+		// after them (an empty equation); math runs need none of them: drop every w:rPr of the embedded document.
+		for (size_t i; (i = xmlEmbedded.find("<w:rPr>")) != std::string::npos; )
+		{
+			size_t e = xmlEmbedded.find("</w:rPr>", i);
+			if (e == std::string::npos) break;
+			xmlEmbedded.erase(i, e + 8 - i);
+		}
 
 		NSFile::CFileBinary file;
 		file.CreateFileW(sTempXmlFile);
