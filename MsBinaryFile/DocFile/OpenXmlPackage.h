@@ -180,7 +180,8 @@ namespace DocFileFormat
 		int RegisterEndnotes();
 		int RegisterComments();
 		int RegisterCommentsExtended();
-		int RegisterImage			( const IMapping* mapping, Global::BlipType blipType );
+		// specduck: ext, when given, names the file instead of the blip type (a pattern stored as GIF in a PNG blip)
+		int RegisterImage			( const IMapping* mapping, Global::BlipType blipType, const std::wstring& ext = L"" );
 		int RegisterHyperlink		( const IMapping* mapping, const std::wstring& link);
 		int RegisterOLEObject		( const IMapping* mapping, const std::wstring& objectType );
 		int RegisterPackage			( const IMapping* mapping, const std::wstring& objectType);

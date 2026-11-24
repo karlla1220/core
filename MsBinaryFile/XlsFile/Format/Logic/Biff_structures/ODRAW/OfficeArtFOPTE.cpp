@@ -1122,7 +1122,7 @@ void MSOPOINT::load(IBinaryReader* reader)
 	}
 	else
 	{
-		unsigned short x_, y_;
+		short x_, y_;	// specduck: signed, as MS-ODRAW defines them (a control point above the box is negative)
 		x_ = reader->ReadInt16();
 		y_ = reader->ReadInt16();
 		
@@ -1138,7 +1138,7 @@ void MSOPOINT::load(XLS::CFRecord& record)
 	}
 	else
 	{
-		unsigned short x_, y_;
+		short x_, y_;
 		record >> x_ >> y_;
 		
 		x = x_;

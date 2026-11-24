@@ -258,8 +258,7 @@ namespace NSGuidesVML
 	void CFormulaConverter::ConvertPath(std::wstring strPath, const ODRAW::CPath& oPath)
 	{
 		m_arParts.clear();
-		std::vector<std::wstring> oArray;
-		boost::algorithm::split(oArray, strPath, boost::algorithm::is_any_of(L"e"),  boost::algorithm::token_compress_on);
+		std::vector<std::wstring> oArray = NSStringUtils::SplitSubpaths(strPath);
 
 		for (size_t nIndex = 0; nIndex < oArray.size(); ++nIndex)
 		{
@@ -309,6 +308,7 @@ namespace NSGuidesVML
 				// m_arIndexDst[n] - returns the index of the last formula in block n
 				//m_arIndexDst[m_lIndexSrc] = m_lIndexDst
 
+				m_bPathStart = (i == 0);
 				switch (oSlice.m_eRuler)
 				{
 				case rtMoveTo:
@@ -1424,12 +1424,12 @@ namespace NSGuidesVML
 			nIndex1 = m_arIndexDst[m_lIndexSrc-9];//stAng
 			nIndex2 = m_arIndexDst[m_lIndexSrc-1];//swAng
 
-			if (oSlice.m_eRuler == rtArc && j == 0)
+			if ((oSlice.m_eRuler == rtArc || m_bPathStart) && j == 0)
 				strFrmla = L"moveTo";
 			else
 				strFrmla = L"lnTo";
 
-			if (oSlice.m_eRuler == rtArc && j == 0)
+			if ((oSlice.m_eRuler == rtArc || m_bPathStart) && j == 0)
 			{
 				m_oPathRes.WriteString(L"<a:moveTo><a:pt x=\"");
 				GetValue(nIndex-5, ptFormula, true, m_oPathRes);
@@ -1685,7 +1685,7 @@ namespace NSGuidesVML
 			nIndex1 = m_arIndexDst[m_lIndexSrc-9];//stAng
 			nIndex2 = m_arIndexDst[m_lIndexSrc-1];//swAng
 
-			if (oSlice.m_eRuler == rtClockwiseArc && j == 0)
+			if ((oSlice.m_eRuler == rtClockwiseArc || m_bPathStart) && j == 0)
 			{
 				m_oPathRes.WriteString(L"<a:moveTo><a:pt x=\"");
 				GetValue(nIndex-5, ptFormula, true, m_oPathRes);

@@ -73,6 +73,23 @@ inline LONG round(double dVal)
 
 namespace NSStringUtils
 {
+    // specduck: a VML path's subpaths, split at its "e" commands; the "e" of "ae" (angleellipseto) is no end.
+    static std::vector<std::wstring> SplitSubpaths(const std::wstring& strPath)
+    {
+        std::vector<std::wstring> parts(1);
+        for (size_t i = 0; i < strPath.length(); ++i)
+        {
+            if (strPath[i] == L'e' && !(i > 0 && strPath[i - 1] == L'a'))
+                parts.push_back(L"");
+            else
+                parts.back() += strPath[i];
+        }
+        std::vector<std::wstring> result;
+        for (const std::wstring& part : parts)
+            if (!part.empty())
+                result.push_back(part);
+        return result;
+    }
     #define IS_ALPHA(c) (((c >= 'a') && (c <= 'z')) || ((c >= 'A') && (c <= 'Z')))
     #define IS_DIGIT(c) (((c >= '0') && (c <= '9')) || (c == '-'))
 

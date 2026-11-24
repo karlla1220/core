@@ -467,14 +467,16 @@ namespace DocFileFormat
 		writer.SaveToFile(pathFileName, TRUE);
 	}
 
-	int OpenXmlPackage::RegisterImage(const IMapping* mapping, Global::BlipType blipType)
+	int OpenXmlPackage::RegisterImage(const IMapping* mapping, Global::BlipType blipType, const std::wstring& extGiven)
 	{
-        std::wstring fileName = ( std::wstring( L"media/image" ) + FormatUtils::IntToWideString( ++_imageCounter ) + VMLPictureMapping::GetTargetExt( blipType ) );
+		std::wstring ext = extGiven.empty() ? VMLPictureMapping::GetTargetExt( blipType ) : extGiven;
+		std::wstring contentType = L".gif" == ext ? std::wstring(L"image/gif") : VMLPictureMapping::GetContentType( blipType );
+        std::wstring fileName = ( std::wstring( L"media/image" ) + FormatUtils::IntToWideString( ++_imageCounter ) + ext );
 
-		DocumentContentTypesFile._defaultTypes.insert( std::make_pair( VMLPictureMapping::GetTargetExt( blipType ).erase( 0, 1 ), VMLPictureMapping::GetContentType( blipType ) ) );
+		DocumentContentTypesFile._defaultTypes.insert( std::make_pair( std::wstring(ext).erase( 0, 1 ), contentType ) );
         DocumentContentTypesFile._defaultTypes.insert( std::make_pair( L"vml", std::wstring( OpenXmlContentTypes::Vml ) ));
 
-        return AddPart( mapping, L"word", fileName, VMLPictureMapping::GetContentType( blipType ), OpenXmlRelationshipTypes::Image );
+        return AddPart( mapping, L"word", fileName, contentType, OpenXmlRelationshipTypes::Image );
 	}
 	int OpenXmlPackage::RegisterHyperlink(const IMapping* mapping, const std::wstring& link)
 	{

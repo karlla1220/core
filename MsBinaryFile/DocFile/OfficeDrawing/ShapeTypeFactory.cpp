@@ -147,6 +147,20 @@ namespace DocFileFormat
 		case msosptFlowChartExtract				:	{	pShape	=	new FlowChartExtract();					}	break;
 		case msosptFlowChartMerge				:	{	pShape	=	new FlowChartMerge ();					}	break;
 		case msosptFlowChartOnlineStorage		:	{	pShape	=	new FlowChartOnlineStorage();			}	break;
+		// specduck: these were missing: their shapes were written with no type, so with no geometry
+		case msosptFlowChartOfflineStorage		:	{	pShape	=	new FlowChartOfflineStorage();			}	break;
+		case msosptActionButtonBlank			:	{	pShape	=	new ActionButtonBlank();				}	break;
+		case msosptActionButtonHome				:	{	pShape	=	new ActionButtonHome();					}	break;
+		case msosptActionButtonHelp				:	{	pShape	=	new ActionButtonHelp();					}	break;
+		case msosptActionButtonInformation		:	{	pShape	=	new ActionButtonInfo();					}	break;
+		case msosptActionButtonForwardNext		:	{	pShape	=	new ActionButtonNext();					}	break;
+		case msosptActionButtonBackPrevious		:	{	pShape	=	new ActionButtonBack();					}	break;
+		case msosptActionButtonEnd				:	{	pShape	=	new ActionButtonEnd();					}	break;
+		case msosptActionButtonBeginning		:	{	pShape	=	new ActionButtonBegin();				}	break;
+		case msosptActionButtonReturn			:	{	pShape	=	new ActionButtonReturn();				}	break;
+		case msosptActionButtonDocument			:	{	pShape	=	new ActionButtonDoc();					}	break;
+		case msosptActionButtonSound			:	{	pShape	=	new ActionButtonSound();				}	break;
+		case msosptActionButtonMovie			:	{	pShape	=	new ActionButtonMovie();				}	break;
 		case msosptFlowChartDelay				:	{	pShape	=	new FlowChartDelay ();					}	break;
 		case msosptFlowChartMagneticTape		:	{	pShape	=	new FlowChartMagneticTape();			}	break;
 		case msosptFlowChartMagneticDisk		:	{	pShape	=	new FlowChartMagneticDisk();			}	break;

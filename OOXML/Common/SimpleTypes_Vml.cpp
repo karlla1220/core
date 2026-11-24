@@ -2848,7 +2848,8 @@ namespace SimpleTypes
 		}
 		void CCssProperty::ReadValue_LayoutFlowAlt(std::wstring& sValue)
 		{
-			m_oValue.eLayoutFlowAlt = csslayoutflowaltBottomToTop;
+			// specduck: Word also writes top-to-bottom; only bottom-to-top turns the text
+			m_oValue.eLayoutFlowAlt = L"top-to-bottom" == sValue ? csslayoutflowaltTopToBottom : csslayoutflowaltBottomToTop;
 		}
 		void CCssProperty::ReadValue_String(std::wstring& sValue)
 		{

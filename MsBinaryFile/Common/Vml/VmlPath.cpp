@@ -850,8 +850,7 @@ namespace ODRAW
 	void CPath::FromXML(std::wstring strPath, NSGuidesVML::CFormulasManager& pManager)
 	{
 		m_arParts.clear();
-		std::vector<std::wstring> oArray;
-		boost::algorithm::split(oArray, strPath, boost::algorithm::is_any_of(L"e"), boost::algorithm::token_compress_on);
+		std::vector<std::wstring> oArray = NSStringUtils::SplitSubpaths(strPath);
 
 		for (size_t nIndex = 0; nIndex < oArray.size(); ++nIndex)
 		{
