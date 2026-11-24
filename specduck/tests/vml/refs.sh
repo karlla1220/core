@@ -17,4 +17,4 @@ save as active document file name \"$C/vml-corpus.doc.word.pdf\" file format for
 close every document saving no
 end tell"
 cp $C/vml-corpus.word.pdf $C/vml-corpus.doc.word.pdf $C/vml-corpus.doc .
-[ -n "${SEND_TO:-}" ] && scp -q vml-corpus.docx vml-corpus.doc "$SEND_TO"
+if [ -n "${SEND_TO:-}" ]; then scp -q vml-corpus.docx vml-corpus.doc "$SEND_TO"; fi

@@ -711,6 +711,18 @@
 "desc": "v:rect dashstyle=\"8 3 1 3 1 3\""
 },
 {
+"id": "stroke-dash-case-dashDot",
+"desc": "dashstyle=\"dashDot\" (a name in mixed case, as in TS 38.827)"
+},
+{
+"id": "stroke-dash-case-longDashDotDot",
+"desc": "dashstyle=\"longDashDotDot\" (a name in mixed case, as in TS 38.827)"
+},
+{
+"id": "stroke-dash-case-ShortDash",
+"desc": "dashstyle=\"ShortDash\" (a name in mixed case, as in TS 38.827)"
+},
+{
 "id": "stroke-linestyle-single",
 "desc": "linestyle=single"
 },

@@ -5304,6 +5304,8 @@ void CDrawingConverter::CheckPenShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils::
         XmlMacroReadAttributeBase(oNodeStroke, L"dashstyle", sStrokeDashStyle);
 		if (sStrokeDashStyle.is_init())
 		{
+			// specduck: Word also writes "dashDot", "longDashDotDot" (TS 38.827) and reads the names in any case
+			std::transform(sStrokeDashStyle->begin(), sStrokeDashStyle->end(), sStrokeDashStyle->begin(), ::towlower);
 			pPPTShape->m_bIsStroked = true;
 
 			if (!pSpPr->ln.is_init())

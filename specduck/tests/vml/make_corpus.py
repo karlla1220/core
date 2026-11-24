@@ -114,6 +114,8 @@ for d in ('solid', 'shortdash', 'shortdot', 'shortdashdot', 'shortdashdotdot', '
           'longdashdot', 'longdashdotdot', '1 1', '3 1', '4 2 1 2', '8 3 1 3 1 3'):
     case(f'stroke-dash-{d.replace(" ", "_")}', f'dashstyle="{d}"', line(f'dashstyle="{d}"'))
     case(f'rect-dash-{d.replace(" ", "_")}', f'v:rect dashstyle="{d}"', para(shape(inner=f'<v:stroke dashstyle="{d}"/>')))
+for d in ('dashDot', 'longDashDotDot', 'ShortDash'):
+    case(f'stroke-dash-case-{d}', f'dashstyle="{d}" (a name in mixed case, as in TS 38.827)', line(f'dashstyle="{d}"'))
 for ls in ('single', 'thinThin', 'thinThick', 'thickThin', 'thickBetweenThin'):
     case(f'stroke-linestyle-{ls}', f'linestyle={ls}', line(f'linestyle="{ls}"', weight='6pt'))
 for cap in ('flat', 'round', 'square'):
