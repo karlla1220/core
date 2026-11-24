@@ -21,7 +21,11 @@ SHOWN = {W + t for t in ('b', 'i', 'u', 'strike', 'dstrike', 'highlight', 'color
 
 def convert(x2t: Path, doc: Path, work: Path) -> Path:
     src, dst = work / 'in.doc', work / 'out.docx'
-    src.write_bytes(doc.read_bytes())
+    if doc.suffix == '.zip':        # a specification as 3GPP publishes it: its one .doc
+        with zipfile.ZipFile(doc) as z:
+            src.write_bytes(z.read(next(n for n in z.namelist() if n.lower().endswith('.doc'))))
+    else:
+        src.write_bytes(doc.read_bytes())
     task = work / 'task.xml'
     task.write_text('<?xml version="1.0" encoding="utf-8"?><TaskQueueDataConvert>'
                     f'<m_sFileFrom>{src}</m_sFileFrom><m_sFileTo>{dst}</m_sFileTo>'
@@ -87,6 +91,9 @@ CASES = {
                                      lambda x: 'ProgID="Equation.DSMT4"' in x and 'ObjectID="_0"' not in x),
     'word2007-equations-in-doc.doc': ('17 Word 2007 equations come back as m:oMath, none as a "Word.Document" package',
                                       lambda x: x.count('<m:oMath>') == 17 and 'ProgID="Word.Document"' not in x),
+    '38423-f50.zip': ('a character outside the BMP split over two runs stays one (U+1D473, no lone surrogate)',
+                      lambda x: '\U0001d473' in x and '\U0001d400' not in x
+                      and not re.search('[\ud800-\udfff]', x)),
     'tracked-paragraph-style.doc': ('an inserted heading keeps its new style',
                                     lambda x: re.search(r'<w:pStyle w:val="Heading1"/>(?:(?!</w:p>).)*Scope', x,
                                                         re.S) is not None),
@@ -102,6 +109,12 @@ def main() -> int:
                 docx = convert(x2t, samples / name, Path(work))
             except Exception as exc:  # noqa: BLE001 - reported below
                 failures.append(f'{name}: x2t failed: {exc}')
+                continue
+            try:
+                zipfile.ZipFile(docx).read('word/document.xml').decode()
+            except UnicodeDecodeError as exc:   # a lone surrogate written as CESU-8
+                failures.append(f'{name}: document.xml is no valid UTF-8 ({exc.reason} at byte {exc.start})')
+                print('FAIL ' + name)
                 continue
             failures += common(name, docx)
             if not check(zipfile.ZipFile(docx).read('word/document.xml').decode()):

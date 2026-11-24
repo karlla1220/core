@@ -96,6 +96,7 @@ namespace DocFileFormat
         int _skipPictCp = -1;
         // The code and result of an embedded object's field, after the object is written: cp in (from, to) is skipped.
         int _skipCharsFrom = -1, _skipCharsTo = -1;
+		int _lowSurrogateWrittenAt = -1;	// specduck: cp of a low surrogate already written with its high one
 	protected:
 
 		int getListNumCache		(int fc, int fc_end);
