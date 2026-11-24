@@ -148,6 +148,7 @@ namespace DocFileFormat
 		case msosptFlowChartMerge				:	{	pShape	=	new FlowChartMerge ();					}	break;
 		case msosptFlowChartOnlineStorage		:	{	pShape	=	new FlowChartOnlineStorage();			}	break;
 		// specduck: these were missing: their shapes were written with no type, so with no geometry
+		case msosptStraightConnector1			:	{	pShape	=	new StraightConnector();				}	break;
 		case msosptFlowChartOfflineStorage		:	{	pShape	=	new FlowChartOfflineStorage();			}	break;
 		case msosptActionButtonBlank			:	{	pShape	=	new ActionButtonBlank();				}	break;
 		case msosptActionButtonHome				:	{	pShape	=	new ActionButtonHome();					}	break;
