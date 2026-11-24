@@ -83,6 +83,8 @@ CASES = {
     'inserted-then-deleted.doc': ('text inserted then deleted: w:ins around w:del',
                                   lambda x: re.search(r'<w:ins [^>]*><w:del ', x) is not None),
     'two-table-definitions.doc': ('cells read the table definition in force (rows fill the grid)', lambda x: True),
+    'mathtype-object-in-quote.doc': ('the MathType object inside a QUOTE field keeps its ProgID and storage',
+                                     lambda x: 'ProgID="Equation.DSMT4"' in x and 'ObjectID="_0"' not in x),
     'tracked-paragraph-style.doc': ('an inserted heading keeps its new style',
                                     lambda x: re.search(r'<w:pStyle w:val="Heading1"/>(?:(?!</w:p>).)*Scope', x,
                                                         re.S) is not None),

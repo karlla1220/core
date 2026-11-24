@@ -9,3 +9,4 @@
 | inserted-then-deleted.doc | R5-202914 (RP-200581) | text inserted by one revision and deleted by another |
 | two-table-definitions.doc | R5-205489 (RP-202224) | table rows with two table definitions; rows starting after the grid's edge |
 | tracked-paragraph-style.doc | R5-197049 (RP-191689) | headings inserted with track changes (style changed with sprmPIstd) |
+| mathtype-object-in-quote.doc | R5-195443 (RP-190871) | a MathType equation written as { QUOTE … \| { EMBED Equation.DSMT4 } } |
