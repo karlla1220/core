@@ -20,7 +20,7 @@ if [ "${SKIP_APT:-0}" != 1 ]; then
   export DEBIAN_FRONTEND=noninteractive
   $SUDO apt-get update -q
   $SUDO apt-get install -y -q build-essential qtbase5-dev-tools qt5-qmake libboost-regex-dev libboost-filesystem-dev \
-    libboost-system-dev libboost-date-time-dev curl ca-certificates dpkg-dev python3 file
+    libboost-date-time-dev curl ca-certificates dpkg-dev python3 file
 fi
 
 # The release's shared libraries, where qmake links them from.
@@ -45,7 +45,10 @@ cp "$WORK"/icu/source/common/unicode/*.h "$WORK"/icu/source/i18n/unicode/*.h Com
 LIBDIR=/usr/lib/$(dpkg-architecture -qDEB_HOST_MULTIARCH)
 mkdir -p Common/3dParty/boost/build/linux_64/lib
 ln -sfn /usr/include Common/3dParty/boost/build/linux_64/include
-cp "$LIBDIR"/libboost_{regex,system,filesystem,date_time}.a Common/3dParty/boost/build/linux_64/lib/
+for l in regex system filesystem date_time; do  # boost_system is header-only from 1.69 and gone from newer distributions
+  if [ -f "$LIBDIR/libboost_$l.a" ]; then cp "$LIBDIR/libboost_$l.a" Common/3dParty/boost/build/linux_64/lib/
+  else ar rcs "Common/3dParty/boost/build/linux_64/lib/libboost_$l.a"; fi
+done
 
 build() { mkdir -p "$WORK/qb/$1" && (cd "$WORK/qb/$1" && qmake -qt=qt5 "$ROOT/$2" CONFIG+=release && make -j"$JOBS"); }
 build cryptopp Common/3dParty/cryptopp/project/cryptopp.pro
