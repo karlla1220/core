@@ -835,7 +835,10 @@ namespace DocFileFormat
 						OleObject ole ( chpxSep, m_document);
 						OleObjectMapping oleObjectMapping( &oleObjectWriter, m_context, &pic, _caller, oVmlMapper.m_shapeId );
 						
-						if (oVmlMapper.m_isEmbedded)
+						// The picture's embedded data stands in for the object only when it is the equation, or when the
+						// object pool has no object: an Office 2010 metro blob beside a real object (a Visio drawing)
+						// replaced it with a "Word.Document" package, and the drawing was lost.
+						if (oVmlMapper.m_isEmbedded && (oVmlMapper.m_isEquation || ole.Program.empty()))
 						{
 							ole.isEquation = oVmlMapper.m_isEquation;
 							ole.isEmbedded = oVmlMapper.m_isEmbedded;
