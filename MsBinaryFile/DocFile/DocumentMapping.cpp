@@ -771,6 +771,15 @@ namespace DocFileFormat
 		{
 			int cpPic		=	searchNextTextMark(m_document->Text, cpFieldStart,	TextMark::Picture);
 			int cpFieldSep	=	searchNextTextMark(m_document->Text, cpFieldStart,	TextMark::FieldSeparator);
+			// The object's own separator, whose run names its storage: the last before its picture. MathType writes
+			// { QUOTE <linear form> | { EMBED Equation.DSMT4 | <picture> } }, read as an EMBED by its code; its first
+			// separator is the QUOTE's, which names no object (ProgID="" ObjectID="_0", the equation a picture).
+			while (cpPic < cpFieldEnd && cpFieldSep < cpPic)
+			{
+				int next = searchNextTextMark(m_document->Text, cpFieldSep + 1, TextMark::FieldSeparator);
+				if (next >= cpPic) break;
+				cpFieldSep = next;
+			}
 
 			if (cpPic < cpFieldEnd)
 			{
