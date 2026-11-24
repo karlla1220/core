@@ -34,6 +34,7 @@
  */
 
 #include "VMLPictureMapping.h"
+#include <cstring>
 #include "VMLShapeMapping.h"
 
 #include "OfficeDrawing/MetafilePictBlip.h"
@@ -166,6 +167,61 @@ namespace DocFileFormat
 
 		return true;
 	}
+	// An embedded equation is Word 2003 XML, where tracked changes are aml:annotation elements around the math:
+	// <aml:annotation w:type="Word.Insertion"><aml:content>...<m:t>2</m:t></aml:content></aml:annotation>. The OMML
+	// reader knows no aml and dropped the runs' text, leaving empty equations. Keep what an insertion holds and drop
+	// every other annotation (deletions, the old properties of a formatting change, bookmarks, comments): the equation
+	// as it reads now. Whether the whole equation is inserted or deleted is on the run that holds it.
+	static std::string UnwrapAmlAnnotations(const std::string& xml)
+	{
+		static const std::string open = "<aml:annotation", close = "</aml:annotation>";
+		std::string out;
+		size_t pos = 0;
+		while (true)
+		{
+			size_t start = xml.find(open, pos);
+			if (start == std::string::npos) { out.append(xml, pos, std::string::npos); break; }
+			out.append(xml, pos, start - pos);
+
+			size_t tagEnd = xml.find('>', start);
+			if (tagEnd == std::string::npos) { out.append(xml, start, std::string::npos); break; }
+			std::string tag = xml.substr(start, tagEnd + 1 - start);
+			if (tag.size() >= 2 && tag[tag.size() - 2] == '/') { pos = tagEnd + 1; continue; }	// <aml:annotation .../>
+
+			// the matching close, nested annotations counted
+			size_t depth = 1, scan = tagEnd + 1, end = std::string::npos;
+			while (depth > 0)
+			{
+				size_t nextOpen = xml.find(open, scan), nextClose = xml.find(close, scan);
+				if (nextClose == std::string::npos) break;
+				if (nextOpen != std::string::npos && nextOpen < nextClose)
+				{
+					size_t e = xml.find('>', nextOpen);
+					if (e != std::string::npos && xml[e - 1] != '/') depth++;
+					scan = (e == std::string::npos) ? nextOpen + open.size() : e + 1;
+				}
+				else
+				{
+					if (--depth == 0) end = nextClose;
+					scan = nextClose + close.size();
+				}
+			}
+			if (end == std::string::npos) { out.append(xml, start, std::string::npos); break; }
+
+			if (tag.find("Word.Insertion") != std::string::npos)
+			{
+				std::string inner = UnwrapAmlAnnotations(xml.substr(tagEnd + 1, end - tagEnd - 1));
+				for (const char* t : {"<aml:content>", "</aml:content>", "<aml:content/>"})
+				{
+					for (size_t i; (i = inner.find(t)) != std::string::npos; ) inner.erase(i, strlen(t));
+				}
+				out += inner;
+			}
+			pos = end + close.size();
+		}
+		return out;
+	}
+
 	bool VMLPictureMapping::ParseEmbeddedEquation(std::pair<boost::shared_array<char>, size_t>& data, std::wstring& xmlString)
 	{
 		xmlString.clear();
@@ -180,9 +236,11 @@ namespace DocFileFormat
 
 		std::wstring sTempXmlFile = NSDirectory::CreateTempFileWithUniqueName(sTempFolder, L"emb");
 
+		std::string xmlEmbedded = UnwrapAmlAnnotations(std::string(data.first.get(), data.second));
+
 		NSFile::CFileBinary file;
 		file.CreateFileW(sTempXmlFile);
-		file.WriteFile((BYTE*)data.first.get(), data.second);
+		file.WriteFile((BYTE*)xmlEmbedded.data(), xmlEmbedded.size());
 		file.CloseFile();
 
 		OOX::CPath path(sTempXmlFile);
