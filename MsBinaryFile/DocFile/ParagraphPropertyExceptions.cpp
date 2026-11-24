@@ -279,6 +279,15 @@ namespace DocFileFormat
 					break;
 				}
 			}
+
+			// A paragraph whose style was changed with track changes on keeps the old style in istd and the new
+			// one in a sprmPIstd of its grpprl (beside sprmPPropRMark). Word shows the new style; without this the
+			// paragraph kept its old style (an inserted heading came out as Normal).
+			for (std::vector<SinglePropertyModifier>::iterator iter = grpprl->begin(); iter != grpprl->end(); iter++)
+			{
+				if (iter->OpCode == sprmPIstd && iter->argumentsSize >= 2)
+					istd = FormatUtils::BytesToUInt16(iter->Arguments, 0, iter->argumentsSize);
+			}
 		}
     }
 }

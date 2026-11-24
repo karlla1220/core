@@ -867,7 +867,15 @@ namespace DocFileFormat
 				}	
 			}
 
-			_skipRuns		= 3;
+			// The object is written: drop the field's code and result up to its end mark by position. Counting runs
+			// (3, and 2 more at the separator) leaked the code's tail ("tion.3") when it spanned more runs.
+			if (cpFieldEnd < (int)m_document->Text->size())
+			{
+				_skipCharsFrom	= cpFieldStart;
+				_skipCharsTo	= cpFieldEnd;
+			}
+			else
+				_skipRuns	= 3;	// no end mark found: the old way
 			_embeddedObject	= true;
 		}					
 		else
@@ -905,6 +913,12 @@ namespace DocFileFormat
 		for (size_t i = 0; i < chars->size(); ++i)
 		{
 			wchar_t c = chars->at(i), code = c;
+
+			if (cp > _skipCharsFrom && cp < _skipCharsTo)
+			{// inside an embedded object's field, already written (the end mark itself is handled below)
+				cp++;
+				continue;
+			}
 
 			if (TextMark::Tab == code)
 			{

@@ -117,6 +117,15 @@ namespace DocFileFormat
 
 			_paraEndChpx->Convert( ccMapping );
 
+			// The paragraph mark's own revision: inserted (a new paragraph in a CR) and/or deleted.
+			if ( rev->InsertedToo && m_document && m_document->RevisionAuthorTable )
+			{
+				XMLTools::XMLElement ins( L"w:ins" );
+				WideString* author = dynamic_cast<WideString*>(m_document->RevisionAuthorTable->operator[](rev->IsbtIns));
+				if (author) ins.AppendAttribute( L"w:author", FormatUtils::XmlEncode(*author) );
+				ins.AppendAttribute( L"w:date", FormatUtils::XmlEncode(rev->DttmIns.getString()) );
+				rPr->AppendChild( ins );
+			}
 			if ( rev->Type == Deleted )
 			{
 				XMLTools::XMLElement del( L"w:del" );
