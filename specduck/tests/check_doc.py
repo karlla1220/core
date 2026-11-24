@@ -85,6 +85,8 @@ CASES = {
     'two-table-definitions.doc': ('cells read the table definition in force (rows fill the grid)', lambda x: True),
     'mathtype-object-in-quote.doc': ('the MathType object inside a QUOTE field keeps its ProgID and storage',
                                      lambda x: 'ProgID="Equation.DSMT4"' in x and 'ObjectID="_0"' not in x),
+    'word2007-equations-in-doc.doc': ('17 Word 2007 equations come back as m:oMath, none as a "Word.Document" package',
+                                      lambda x: x.count('<m:oMath>') == 17 and 'ProgID="Word.Document"' not in x),
     'tracked-paragraph-style.doc': ('an inserted heading keeps its new style',
                                     lambda x: re.search(r'<w:pStyle w:val="Heading1"/>(?:(?!</w:p>).)*Scope', x,
                                                         re.S) is not None),
