@@ -40,15 +40,13 @@
 #include "OfficeDrawing/MetafilePictBlip.h"
 
 #include "../../DesktopEditor/common/StringExt.h"
-#include "../../OOXML/DocxFormat/Document.h"
 
 #include "../../DesktopEditor/common/File.h"
+#include "../../DesktopEditor/common/Directory.h"
 #include "../../DesktopEditor/raster/BgraFrame.h"
 
 #include "../PptFile/Reader/ReadStructures.h"
 
-#include "../../OOXML/DocxFormat/Math/oMathPara.h"
-#include "../../OOXML/DocxFormat/Logic/Paragraph.h"
 
 using namespace DocFileFormat;
 
@@ -228,70 +226,25 @@ namespace DocFileFormat
 
 		if (data.second == 0 || !data.first) return false;
 
-		std::wstring sTempFolder = m_context->_doc->m_sTempFolder;
-		if (sTempFolder.empty())
+		// The equation is Word 2003 XML whose m:oMath is OMML already: Word moves it into the document as it is. Read
+		// through OOX::CDocument and written back, it lost its runs' text, or the whole document did not read (an
+		// empty equation, or a "Word.Document" package for it).
+		std::string xml = UnwrapAmlAnnotations(std::string(data.first.get(), data.second));
+		// The runs' Word 2003 character properties (w:h-ansi, w:sz-cs, wx:font ...) are no DOCX: math runs need none.
+		for (size_t i; (i = xml.find("<w:rPr>")) != std::string::npos; )
 		{
-			sTempFolder = NSFile::CFileBinary::GetTempPath();
-		}
-
-		std::wstring sTempXmlFile = NSDirectory::CreateTempFileWithUniqueName(sTempFolder, L"emb");
-
-		std::string xmlEmbedded = UnwrapAmlAnnotations(std::string(data.first.get(), data.second));
-		// The runs' Word 2003 character properties (w:kern, w:sz-cs, wx:font ...) made the OMML reader drop the m:t
-		// after them (an empty equation); math runs need none of them: drop every w:rPr of the embedded document.
-		for (size_t i; (i = xmlEmbedded.find("<w:rPr>")) != std::string::npos; )
-		{
-			size_t e = xmlEmbedded.find("</w:rPr>", i);
+			size_t e = xml.find("</w:rPr>", i);
 			if (e == std::string::npos) break;
-			xmlEmbedded.erase(i, e + 8 - i);
+			xml.erase(i, e + 8 - i);
 		}
+		size_t begin = xml.find("<m:oMath>");
+		if (begin == std::string::npos) begin = xml.find("<m:oMath ");
+		size_t end = begin == std::string::npos ? std::string::npos : xml.find("</m:oMath>", begin);
+		if (end == std::string::npos) return false;
 
-		NSFile::CFileBinary file;
-		file.CreateFileW(sTempXmlFile);
-		file.WriteFile((BYTE*)xmlEmbedded.data(), xmlEmbedded.size());
-		file.CloseFile();
-
-		OOX::CPath path(sTempXmlFile);
-		OOX::CDocument docEmbedded(NULL, path, path);
-
-		bool res = false;
-		for (std::vector<OOX::WritingElement*>::iterator it = docEmbedded.m_arrItems.begin(); it != docEmbedded.m_arrItems.end(); ++it)
-		{
-			if ((*it)->getType() == OOX::et_w_p)
-			{
-				OOX::Logic::CParagraph* paragraph = dynamic_cast<OOX::Logic::CParagraph*>(*it);
-
-				for (std::vector<OOX::WritingElement*>::iterator jt = paragraph->m_arrItems.begin();
-					(paragraph) && (jt != paragraph->m_arrItems.end()); jt++)
-				{
-					if ((*jt)->getType() == OOX::et_m_oMath)
-					{
-						res = true;
-						xmlString = (*jt)->toXML();
-						break;
-					}
-					else if ((*jt)->getType() == OOX::et_m_oMathPara)
-					{
-						OOX::Logic::COMathPara* mathPara = dynamic_cast<OOX::Logic::COMathPara*>(*jt);
-
-						for (std::vector<OOX::WritingElement*>::iterator kt = mathPara->m_arrItems.begin();
-							(mathPara) && (kt != mathPara->m_arrItems.end()); kt++)
-						{
-							if ((*kt)->getType() == OOX::et_m_oMath)
-							{
-								res = true;
-								xmlString = (*kt)->toXML();
-								break;
-							}
-						}
-					}
-					if (res) break;
-				}
-				if (res) break;
-			}
-		}
-		NSFile::CFileBinary::Remove(sTempXmlFile);
-		return res;
+		end += strlen("</m:oMath>");
+		xmlString = NSFile::CUtf8Converter::GetUnicodeStringFromUTF8((BYTE*)xml.data() + begin, (LONG)(end - begin));
+		return true;
 	}
 	//---------------------------------------------------------------
 	void VMLPictureMapping::appendStyleProperty(std::wstring& style, const std::wstring& propName, const std::wstring& propValue) const
