@@ -1160,9 +1160,14 @@ namespace DocFileFormat
                                     OleObject ole ( chpx, m_document);
                                     OleObjectMapping oleObjectMapping( &pictWriter, m_context, &oPicture, _caller, oVmlMapper.m_shapeId );
 								
-                                    ole.isEquation = oVmlMapper.m_isEquation;
-                                    ole.isEmbedded = oVmlMapper.m_isEmbedded;
-                                    ole.embeddedData = oVmlMapper.m_embeddedData;
+                                    // as for an EMBED field: the embedded data stands in only for an equation, or when the
+                                    // pool has no object (a metro blob beside a Visio drawing replaced the drawing)
+                                    if (oVmlMapper.m_isEquation || ole.Program.empty())
+                                    {
+                                        ole.isEquation = oVmlMapper.m_isEquation;
+                                        ole.isEmbedded = oVmlMapper.m_isEmbedded;
+                                        ole.embeddedData = oVmlMapper.m_embeddedData;
+                                    }
 							
                                     ole.Convert( &oleObjectMapping );
                                 }
