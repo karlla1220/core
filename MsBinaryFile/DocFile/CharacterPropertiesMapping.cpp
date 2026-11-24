@@ -340,11 +340,13 @@ namespace DocFileFormat
 					}break;
 					case sprmCOldHighlight:
 					{
-						appendValueElement(parent, L"highlight", FormatUtils::MapValueToWideString(iter->Arguments[1], &Global::ColorNameIdentifier[0][0], 17, 12), true);
+						// colour 0 is no highlight: "none" (the colour table's "auto" is no ST_HighlightColor)
+						appendValueElement(parent, L"highlight", iter->Arguments[1] == 0 ? std::wstring(L"none") : FormatUtils::MapValueToWideString(iter->Arguments[1], &Global::ColorNameIdentifier[0][0], 17, 12), true);
 					}break;
 					case sprmCHighlight:
 					{
-						appendValueElement(parent, L"highlight", FormatUtils::MapValueToWideString(iter->Arguments[0], &Global::ColorNameIdentifier[0][0], 17, 12), true);
+						// colour 0 is no highlight: "none" (the colour table's "auto" is no ST_HighlightColor)
+						appendValueElement(parent, L"highlight", iter->Arguments[0] == 0 ? std::wstring(L"none") : FormatUtils::MapValueToWideString(iter->Arguments[0], &Global::ColorNameIdentifier[0][0], 17, 12), true);
 					}break;
 					case sprmOldCDxaSpace:
 					case sprmCDxaSpace:
