@@ -64,6 +64,10 @@ namespace DocFileFormat
 	private:
 		DateAndTime Dttm;
 		short Isbt;
+		// A run both inserted and deleted (by different revisions) keeps both marks and their authors and dates.
+		bool InsertedToo = false;
+		short IsbtIns = 0, IsbtDel = 0;
+		DateAndTime DttmIns, DttmDel;
 		RevisionType Type;
 		std::vector<SinglePropertyModifier>* Changes;
 		int RsidDel;

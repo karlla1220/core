@@ -501,11 +501,20 @@ namespace DocFileFormat
 
 			if (Deleted == rev.Type)
 			{
-				WideString* author = dynamic_cast<WideString*>(m_document->RevisionAuthorTable->operator[](rev.Isbt));
+				if (rev.InsertedToo)
+				{// inserted by one revision, deleted by another: Word writes w:ins around w:del
+					WideString* authorIns = dynamic_cast<WideString*>(m_document->RevisionAuthorTable->operator[](rev.IsbtIns));
+
+					m_pXmlWriter->WriteNodeBegin(L"w:ins", true);
+					m_pXmlWriter->WriteAttribute(L"w:author", FormatUtils::XmlEncode(authorIns ? *authorIns : std::wstring()));
+					m_pXmlWriter->WriteAttribute(L"w:date", FormatUtils::XmlEncode(rev.DttmIns.getString()));
+					m_pXmlWriter->WriteNodeEnd(L"", true, false);
+				}
+				WideString* author = dynamic_cast<WideString*>(m_document->RevisionAuthorTable->operator[](rev.IsbtDel));
 
                 m_pXmlWriter->WriteNodeBegin(L"w:del", true);
-				m_pXmlWriter->WriteAttribute(L"w:author", FormatUtils::XmlEncode(*author));
-				m_pXmlWriter->WriteAttribute(L"w:date", FormatUtils::XmlEncode(rev.Dttm.getString()));
+				m_pXmlWriter->WriteAttribute(L"w:author", FormatUtils::XmlEncode(author ? *author : std::wstring()));
+				m_pXmlWriter->WriteAttribute(L"w:date", FormatUtils::XmlEncode(rev.DttmDel.getString()));
 				m_pXmlWriter->WriteNodeEnd(L"", true, false);
 			}
 			else if ( rev.Type == Inserted )
@@ -580,6 +589,8 @@ namespace DocFileFormat
 			if (Deleted == rev.Type)
 			{
                 m_pXmlWriter->WriteNodeEnd(L"w:del");
+				if (rev.InsertedToo)
+					m_pXmlWriter->WriteNodeEnd(L"w:ins");
 			}
 			else if (Inserted == rev.Type)
 			{
@@ -1217,6 +1228,19 @@ namespace DocFileFormat
 					}
 					
 					m_pXmlWriter->WriteNodeEnd( L"", true );
+				}
+			}
+			else if (0x1E == code || 0x1F == code)
+			{// non-breaking (0x1E) and optional (0x1F) hyphens: control symbols, but text; dropping them joined words
+				if (textType == L"instrText")
+				{
+					if (0x1E == code) text += L"-";
+				}
+				else
+				{
+					writeTextElement(text, textType);
+					text.clear();
+					m_pXmlWriter->WriteString(0x1E == code ? L"<w:noBreakHyphen/>" : L"<w:softHyphen/>");
 				}
 			}
 			else if (!FormatUtils::IsControlSymbol(c) && ((int)c != 0xFFFF))

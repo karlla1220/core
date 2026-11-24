@@ -109,7 +109,15 @@ namespace DocFileFormat
 			}
 		}
 
-		bool bPresentDefTable = false;
+		// The last tDef of the row is the one in force: a later sprm overrides an earlier one, and
+		// DocumentMapping::buildTableGrid builds the grid from the last. Reading the first here gave cells
+		// widths of an older definition, so spans overran the grid (an extra column in every row).
+		std::vector<SinglePropertyModifier>::iterator itDefTable = tapx->grpprl->end();
+		for (std::vector<SinglePropertyModifier>::iterator iter = tapx->grpprl->begin(); iter != tapx->grpprl->end(); ++iter)
+		{
+			if (iter->OpCode == sprmOldTDefTable || iter->OpCode == sprmTDefTable)
+				itDefTable = iter;
+		}
 		for (std::vector<SinglePropertyModifier>::iterator iter = tapx->grpprl->begin(); iter != tapx->grpprl->end(); ++iter)
 		{
 			switch (iter->OpCode)
@@ -117,9 +125,8 @@ namespace DocFileFormat
 				case sprmOldTDefTable:	
 				case sprmTDefTable:	
 				{
-					if (!bPresentDefTable) //118854.doc
+					if (iter == itDefTable) //118854.doc: only one tDef applies
 					{
-						bPresentDefTable = true;
 
 						SprmTDefTable tdef(iter->Arguments, iter->argumentsSize);
 

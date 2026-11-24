@@ -58,6 +58,7 @@ namespace DocFileFormat
 		bool collectRevisionData = true;
 		
 		Changes = new std::vector<SinglePropertyModifier>();
+		bool bIsbtDel = false, bDttmDel = false;
 
 		for ( std::vector<SinglePropertyModifier>::iterator iter = chpx->grpprl->begin(); iter != chpx->grpprl->end(); iter++ )
 		{
@@ -72,22 +73,25 @@ namespace DocFileFormat
 				case sprmCFRMark:
 				{
 					collectRevisionData = false;
+					InsertedToo = true;
 				}break;
 				case sprmCIbstRMark:
 				{
-					this->Isbt = FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize );
+					this->Isbt = this->IsbtIns = FormatUtils::BytesToInt16( iter->Arguments, 0, iter->argumentsSize );
 				}break;		
 				case sprmCIbstRMarkDel:
 				{
-					this->Isbt = FormatUtils::BytesToInt16(iter->Arguments, 0, iter->argumentsSize);
+					this->Isbt = this->IsbtDel = FormatUtils::BytesToInt16(iter->Arguments, 0, iter->argumentsSize);
+					bIsbtDel = true;
 				}break;
 				case sprmCDttmRMark:
 				{
-					this->Dttm = DateAndTime( iter->Arguments, 4 );
+					this->Dttm = this->DttmIns = DateAndTime( iter->Arguments, 4 );
 				}break;	
 				case sprmCDttmRMarkDel:
 				{
-					this->Dttm = DateAndTime(iter->Arguments, 4);
+					this->Dttm = this->DttmDel = DateAndTime(iter->Arguments, 4);
+					bDttmDel = true;
 				}break;
 				case sprmCFRMarkDel:
 				{
@@ -115,6 +119,10 @@ namespace DocFileFormat
 				this->Changes->push_back( *iter );
 			}
 		}
+
+		// a deletion without its own author or date keeps the run's (as before the split)
+		if (!bIsbtDel) IsbtDel = Isbt;
+		if (!bDttmDel) DttmDel = Dttm;
 
 		//type
 		if ( this->Type != Deleted )
