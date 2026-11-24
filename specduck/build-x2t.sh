@@ -63,6 +63,8 @@ fi
 # Three levels below WORK: subprojects build at ../../../<their path>, which stays inside WORK.
 build() { local d="$WORK/qb/$1/b/q"; mkdir -p "$d" && (cd "$d" && qmake -qt=qt5 "$ROOT/$2" "${QARGS[@]}" && make -j"$JOBS"); }
 build cryptopp Common/3dParty/cryptopp/project/cryptopp.pro
+# x2t's Makefile does not depend on the static libraries: drop it so a rebuilt library is linked in.
+rm -f build/bin/linux_64/x2t
 build x2t X2tConverter/build/Qt/X2tSLN.pro
 
 X2T=$(find build/bin -name x2t -type f | head -1)
