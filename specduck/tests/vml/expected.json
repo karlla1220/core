@@ -1,0 +1,94 @@
+{
+ "arrow-open": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "float-behind-text": {
+  "docx2t": "paragraph layout: the floating shape sits a few points lower in sdkjs",
+  "x2t": "paragraph layout: the floating shape sits a few points lower in sdkjs"
+ },
+ "float-hidden": {
+  "docx2t": "only the paragraph text differs in position (the hidden shape is not drawn by either)",
+  "x2t": "only the paragraph text differs in position (the hidden shape is not drawn by either)"
+ },
+ "float-wrap-top-bottom": {
+  "docx2t": "paragraph layout: a few points of spacing",
+  "x2t": "paragraph layout: a few points of spacing"
+ },
+ "preset-102": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-103": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-104": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-105": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-107": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-108": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-196": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-199": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-53": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-54": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "preset-97": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "rect-hr": {
+  "x2t": "Word writes its horizontal rule into the PDF as a picture of a 1.5 pt grey line; sdkjs draws it lighter"
+ },
+ "stroke-linestyle-thickBetweenThin": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "stroke-linestyle-thickThin": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "stroke-linestyle-thinThick": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "stroke-linestyle-thinThin": {
+  "docx2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path",
+  "x2t": "Word draws this legacy preset with shaded faces its own way (no DrawingML guide fit): kept as its path"
+ },
+ "syscolor-window": {
+  "docword": "inline layout of two inline shapes from a .doc SHAPE field: 100 pt more gap in Word"
+ },
+ "syscolor-windowText": {
+  "docword": "inline layout of two inline shapes from a .doc SHAPE field: 100 pt more gap in Word"
+ },
+ "textbox-rotated": {
+  "x2t": "sdkjs lays out the text of a rotated text box in the rotated box; Word in the unrotated one"
+ },
+ "textpath": {
+  "docx2t": "sdkjs does not fit WordArt text to its shape",
+  "x2t": "sdkjs does not fit WordArt text to its shape"
+ }
+}
