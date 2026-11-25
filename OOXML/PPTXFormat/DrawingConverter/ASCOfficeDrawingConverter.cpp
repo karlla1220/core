@@ -3830,10 +3830,12 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
         // to a whole 2 pt (0.75 pt and 1 pt: none, 3 pt: 2 pt, 6 pt: 6 pt; measured in Word, specduck/tests/vml).
         // Without it a thick stroke ran over the text or shape before it (syscolor-window).
         long nStrokeRoom = 0;
-        if (oNode.GetName() != L"v:group" && oNode.GetAttribute(L"stroked") != L"f" && oNode.GetAttribute(L"stroked") != L"false")
+        XmlUtils::CXmlNode oNodeStrokeW = oNode.ReadNode(L"v:stroke");
+        std::wstring sStroked = oNodeStrokeW.IsValid() && !oNodeStrokeW.GetAttribute(L"on").empty()
+            ? oNodeStrokeW.GetAttribute(L"on") : oNode.GetAttribute(L"stroked");	// v:stroke on overrides, as in CheckPenShape
+        if (oNode.GetName() != L"v:group" && sStroked != L"f" && sStroked != L"false")
         {
             std::wstring sWeight = oNode.GetAttribute(L"strokeweight");
-            XmlUtils::CXmlNode oNodeStrokeW = oNode.ReadNode(L"v:stroke");
             if (oNodeStrokeW.IsValid() && !oNodeStrokeW.GetAttribute(L"weight").empty())
                 sWeight = oNodeStrokeW.GetAttribute(L"weight");
             if (!sWeight.empty())
