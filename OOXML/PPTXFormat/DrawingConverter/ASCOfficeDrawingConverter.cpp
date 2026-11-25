@@ -4482,7 +4482,7 @@ static double ImageDpi(const std::wstring& path)
 			DWORD len = (head[i] << 24) | (head[i + 1] << 16) | (head[i + 2] << 8) | head[i + 3];
 			if (0 == memcmp(head + i + 4, "pHYs", 4) && head[i + 16] == 1)
 				return ((head[i + 8] << 24) | (head[i + 9] << 16) | (head[i + 10] << 8) | head[i + 11]) * 0.0254;
-			if (0 == memcmp(head + i + 4, "IDAT", 4)) break;
+			if (0 == memcmp(head + i + 4, "IDAT", 4) || len > read - i - 12) break;	// a corrupt length would wrap i
 			i += 12 + len;
 		}
 	}
