@@ -161,6 +161,9 @@ case('fill-pattern-colored', 'type=pattern, Word bitmap (wdUpDiag), red on yello
     'fillcolor="#c00000"', '<v:fill r:id="rIdPattern" o:title="" color2="#ffff00" type="pattern"/>')))
 case('fill-pattern-custom', 'type=pattern, a bitmap that is no Word preset', para(shape(
     'fillcolor="#c00000"', '<v:fill r:id="rIdHatch" o:title="" color2="#ffff00" type="pattern"/>')))
+case('fill-pattern-no-fillcolor', 'type=pattern, no fillcolor (VML: white)', para(pict(
+    f'<v:rect style="width:144pt;height:72pt" strokecolor="{STROKE}" strokeweight="1.5pt">'
+    '<v:fill r:id="rIdHatch" o:title="" color2="#ffff00" type="pattern"/></v:rect>')))
 case('fill-tile', 'type=tile', para(shape(inner='<v:fill r:id="rIdPhoto" o:title="photo" type="tile"/>')))
 for dpi in (72, 96, 300):
     case(f'fill-tile-{dpi}dpi', f'type=tile, picture stating {dpi} dpi', para(shape(
