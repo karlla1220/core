@@ -1335,6 +1335,7 @@ void CDrawingConverter::SetMediaDstPath(const std::wstring& sPath)
 void CDrawingConverter::Clear()
 {
 	m_mapShapeTypes.clear();
+	m_mapBuiltinShapeTypes.clear();
 	m_mapBinDatas.clear();
 }
 void CDrawingConverter::AddBinData(XmlUtils::CXmlNode& oNode)
@@ -1387,7 +1388,6 @@ void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 	}
 
 	if (strId.empty()) return;
-	//if (m_mapShapeTypes.find(strId) == m_mapShapeTypes.end())//?? with overwriting ???
 	{
 		CPPTShape* pShape = new CPPTShape();
 		pShape->m_bIsShapeType = true;
@@ -1399,11 +1399,14 @@ void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 		
 		LoadCoordSize(oNode, pS);
 
-		m_mapShapeTypes.insert(std::make_pair(strId, pS));
+		// specduck: a later definition of the id replaces the earlier one: Word draws a shape with the one before it
+		m_mapShapeTypes[strId] = pS;
 		std::wstring sSpt = oNode.GetAttribute(L"o:spt");
 		if (!sSpt.empty() && std::all_of(sSpt.begin(), sSpt.end(), ::iswdigit)
 			&& IsWordBuiltinShapeType(oNode, (unsigned int)XmlUtils::GetInteger(sSpt)))
-			m_mapBuiltinShapeTypes[strId] = (unsigned int)XmlUtils::GetInteger(sSpt);			
+			m_mapBuiltinShapeTypes[strId] = (unsigned int)XmlUtils::GetInteger(sSpt);
+		else
+			m_mapBuiltinShapeTypes.erase(strId);
 	}
 }
 void CDrawingConverter::AddShapeType(const std::wstring& bsXml)
