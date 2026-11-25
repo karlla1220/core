@@ -245,9 +245,10 @@ namespace DocFileFormat
 
 		std::vector<ODRAW::OfficeArtFOPTEPtr> options = pContainer->ExtractOptions();
 
-		// specduck: the shapetype before the first shape that uses it, once per part, as Word writes it
+		// specduck: the shapetype before the first shape that uses it, once per part (m_pCaller: an inline shape of a
+		// picture, such as a horizontal rule, is written through a writer of its own), as Word writes it
 		if (NULL != pShape->GetShapeType() && !pShape->fBackground &&
-			m_context->_doc->GetOfficeArt()->m_mapWrittenShapeTypes[m_pXmlWriter].insert(VMLShapeTypeMapping::GenerateTypeId(pShape->GetShapeType())).second)
+			m_context->_doc->GetOfficeArt()->m_mapWrittenShapeTypes[m_pCaller].insert(VMLShapeTypeMapping::GenerateTypeId(pShape->GetShapeType())).second)
 		{
 			VMLShapeTypeMapping oXmlMapper(m_pXmlWriter, m_isInlineShape);
 			pShape->GetShapeType()->Convert(&oXmlMapper);

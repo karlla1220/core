@@ -81,6 +81,8 @@ namespace DocFileFormat
 
 	DocumentMapping::~DocumentMapping()
 	{
+		if (m_document && m_document->GetOfficeArt())		// specduck: the next part may get this address
+			m_document->GetOfficeArt()->m_mapWrittenShapeTypes.erase(static_cast<IMapping*>(this));
 		if (m_bInternalXmlWriter)
 		{
 			RELEASEOBJECT(m_pXmlWriter);
