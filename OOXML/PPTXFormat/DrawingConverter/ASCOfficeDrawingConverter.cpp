@@ -2081,6 +2081,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 		std::wstring sStart = oNodeShape.GetAttribute(L"startangle"), sEnd = oNodeShape.GetAttribute(L"endangle");
 		if (!sStart.empty()) dStart = XmlUtils::GetDouble(sStart);
 		if (!sEnd.empty()) dEnd = XmlUtils::GetDouble(sEnd);
+		// one turn: a huge angle never ended the loop below, and made millions of pieces
+		dStart = std::isfinite(dStart) ? fmod(dStart, 360) : 0;
+		dEnd = std::isfinite(dEnd) ? fmod(dEnd, 360) : 90;
 		double dSweep = dEnd - dStart;
 		while (dSweep <= 0) dSweep += 360;
 
