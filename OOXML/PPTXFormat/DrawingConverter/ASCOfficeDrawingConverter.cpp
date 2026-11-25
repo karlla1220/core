@@ -3348,6 +3348,14 @@ void CDrawingConverter::ConvertWordArtShape(PPTX::Logic::SpTreeElem* elem, XmlUt
 		// bottom: Descent
 	}
 }
+// specduck: Word writes coordorigin="13639" when y is 0
+static void ParseCoordOrigin(const std::wstring& value, LONG& x, LONG& y)
+{
+	std::vector<std::wstring> parts;
+	boost::algorithm::split(parts, value, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
+	x = !parts.empty() && !parts[0].empty() ? XmlUtils::GetInteger(parts[0]) : 0;
+	y = parts.size() >= 2 && !parts[1].empty() ? XmlUtils::GetInteger(parts[1]) : 0;
+}
 void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::CXmlNode& oNode, std::wstring* pMainProps, bool bIsTop)
 {
 	if (!result) return;
@@ -3449,18 +3457,7 @@ void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::
 		}
 	}
 
-    std::wstring strCoordOrigin = oNode.GetAttributeOrValue(L"coordorigin");
-    if (strCoordOrigin != L"")
-	{
-		std::vector<std::wstring> oArray;
-        boost::algorithm::split(oArray, strCoordOrigin, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-		if (oArray.size() >= 1)	// specduck: Word writes coordorigin="13639" when y is 0
-		{
-			lCoordOriginX = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
-			lCoordOriginY = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
-		}
-	}
+	ParseCoordOrigin(oNode.GetAttributeOrValue(L"coordorigin"), lCoordOriginX, lCoordOriginY);
 
 	if (bIsTop)
 	{
@@ -3568,41 +3565,12 @@ void CDrawingConverter::LoadCoordPos(XmlUtils::CXmlNode& oNode, CShapePtr pShape
 {
 	if (!pShape) return;
 
-	pShape->m_dXLogic	= 0;
-	pShape->m_dYLogic	= 0;
-
 	XmlUtils::CXmlNode oNodeTemplate;
-    if (oNode.GetNode(L"coordorigin", oNodeTemplate))
-	{
-        std::wstring strCoordSize = oNodeTemplate.GetAttributeOrValue(L"val");
-        if (!strCoordSize.empty())
-		{
-			std::vector<std::wstring> oArray;
-            boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-			if (oArray.size() >= 1)	// specduck: coordorigin="13639" is x 13639, y 0
-			{
-                pShape->m_dXLogic = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
-			}
-		}
-	}
-	else
-	{
-        std::wstring strCoordSize = oNode.GetAttributeOrValue(L"coordorigin");
-        if (!strCoordSize.empty())
-		{
-			std::vector<std::wstring> oArray;
-            boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-			if (oArray.size() >= 1)	// specduck: coordorigin="13639" is x 13639, y 0
-			{
-                pShape->m_dXLogic = oArray[0].empty() ? 0 : XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = oArray.size() >= 2 && !oArray[1].empty() ? XmlUtils::GetInteger(oArray[1]) : 0;
-			}
-		}
-	}
-	pShape->getBaseShape()->m_oPath.SetCoordpos((LONG)pShape->m_dXLogic, (LONG)pShape->m_dYLogic);
+	LONG x, y;
+	ParseCoordOrigin(oNode.GetNode(L"coordorigin", oNodeTemplate) ? oNodeTemplate.GetAttributeOrValue(L"val") : oNode.GetAttributeOrValue(L"coordorigin"), x, y);
+	pShape->m_dXLogic = x;
+	pShape->m_dYLogic = y;
+	pShape->getBaseShape()->m_oPath.SetCoordpos(x, y);
 }
 
 
