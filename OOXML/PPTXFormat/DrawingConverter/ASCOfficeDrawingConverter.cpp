@@ -4517,7 +4517,9 @@ static std::wstring RecolorPattern(const std::wstring& path, const std::wstring&
 	static int counter = 0;
 	CBgraFrame frame;
 	if (path.empty() || tempDir.empty() || !frame.OpenFile(path)) return L"";
-	int stride = std::abs(frame.get_Stride());
+	int stride = frame.get_Stride();
+	// the image's top row: a negative stride (CxImage) keeps the rows bottom-up
+	const BYTE* top = frame.get_Data() + (stride < 0 ? (frame.get_Height() - 1) * -stride : 0);
 	bool rgba = frame.get_IsRGBA();
 	int w = (std::min)(frame.get_Width(), 8), h = (std::min)(frame.get_Height(), 8);
 	// the 8x8 cell repeated 32 times each way: sdkjs leaves a seam at every tile edge, which a 8-pixel tile made a grid
@@ -4526,7 +4528,7 @@ static std::wstring RecolorPattern(const std::wstring& path, const std::wstring&
 	for (int y = 0; y < H; ++y)
 		for (int x = 0; x < W; ++x)
 		{
-			const BYTE* px = frame.get_Data() + (y % h) * stride + 4 * (x % w);
+			const BYTE* px = top + (y % h) * stride + 4 * (x % w);
 			const ODRAW::CColor& c = (px[0] * 114 + px[1] * 587 + px[2] * 299 < 128000) ? bg : fg;
 			BYTE* out = data + 4 * (y * W + x);
 			out[0] = rgba ? c.R : c.B; out[1] = c.G; out[2] = rgba ? c.B : c.R; out[3] = 255;
