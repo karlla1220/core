@@ -3853,10 +3853,23 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
 		oWriter.EndAttributes();
         oWriter.EndNode(L"wp:extent");
 
+        // specduck: Word leaves an inline VML shape's stroke room before and above it: the stroke weight taken down
+        // to a whole 2 pt (0.75 pt and 1 pt: none, 3 pt: 2 pt, 6 pt: 6 pt; measured in Word, specduck/tests/vml).
+        // Without it a thick stroke ran over the text or shape before it (syscolor-window).
+        long nStrokeRoom = 0;
+        if (oNode.GetName() != L"v:group" && oNode.GetAttribute(L"stroked") != L"f" && oNode.GetAttribute(L"stroked") != L"false")
+        {
+            std::wstring sWeight = oNode.GetAttribute(L"strokeweight");
+            XmlUtils::CXmlNode oNodeStrokeW = oNode.ReadNode(L"v:stroke");
+            if (oNodeStrokeW.IsValid() && !oNodeStrokeW.GetAttribute(L"weight").empty())
+                sWeight = oNodeStrokeW.GetAttribute(L"weight");
+            if (!sWeight.empty())
+                nStrokeRoom = 2 * 12700 * (long)(parserPoint.FromString(sWeight) / 2 + 0.001);
+        }
         oWriter.StartNode(L"wp:effectExtent");
 		oWriter.StartAttributes();
-		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : 0);
-        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : 0);
+		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : nStrokeRoom);
+        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : nStrokeRoom);
         oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : 0);
         oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : 0);
 		oWriter.EndAttributes();
