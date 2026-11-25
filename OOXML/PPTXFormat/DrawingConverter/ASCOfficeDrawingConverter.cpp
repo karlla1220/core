@@ -4819,7 +4819,7 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 				ODRAW::CColor fg, bg;
 				std::wstring recolored;
 				if (oType->GetValue() == SimpleTypes::filltypePattern
-					&& NS_DWC_Common::getColorFromString(sColor.is_init() ? *sColor : std::wstring(L"black"), fg)
+					&& NS_DWC_Common::getColorFromString(sColor.is_init() ? *sColor : std::wstring(L"white"), fg)	// VML's default fillcolor
 					&& NS_DWC_Common::getColorFromString(sColor2.is_init() ? *sColor2 : std::wstring(L"white"), bg))
 					recolored = RecolorPattern(sFillPath, GetTempPath(), fg, bg);
 				if (!recolored.empty())
