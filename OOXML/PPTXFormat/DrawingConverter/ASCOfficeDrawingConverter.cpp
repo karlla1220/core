@@ -2169,10 +2169,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			LoadCoordPos(oNodeShape, oShapeElem.m_pShape); //for path calculate
 		}
 	}
-	pPPTShape->LoadFromXMLShapeType(oNodeShape);
-
-	if (pPPTShape != NULL)
-	{	
+	if (pPPTShape != NULL)	// specduck: NULL for a v:polyline with fewer than two points or an odd count of coordinates
+	{
+		pPPTShape->LoadFromXMLShapeType(oNodeShape);
 		if (!bSetShape)
 		{
 			oShapeElem.m_pShape->setBaseShape(CBaseShapePtr(pPPTShape));
