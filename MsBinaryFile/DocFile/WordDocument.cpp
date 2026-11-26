@@ -1094,50 +1094,19 @@ namespace DocFileFormat
 			unsigned short nColorIndex = (unsigned short)(nColorCode & 0x00ff);
 			unsigned short nPropColor = 0;
 
-			_UINT32 systemColors[35] =
-			{
-				0xc0c0c0, //COLOR_SCROLLBAR
-				0x008080, //COLOR_BACKGROUND
-				0x000080, //COLOR_ACTIVECAPTION
-				0x808080, //COLOR_INACTIVECAPTION
-				0xc0c0c0, //COLOR_MENU
-				0xffffff, //COLOR_WINDOW
-				0x000000, //COLOR_WINDOWFRAME
-				0x000000, //COLOR_MENUTEXT 
-				0x000000, //COLOR_WINDOWTEXT
-				0xffffff, //COLOR_CAPTIONTEXT
-				0xc0c0c0, //COLOR_ACTIVEBORDER
-				0xc0c0c0, //COLOR_INACTIVEBORDER
-				0x808080, //COLOR_APPWORKSPACE
-				0x000080, //COLOR_HIGHLIGHT
-				0xffffff, //COLOR_HIGHLIGHTTEXT
-				0xc0c0c0, //COLOR_3DFACE
-				0x808080, //COLOR_3DSHADOW
-				0x808080, //COLOR_GRAYTEXT 
-				0x000000, //COLOR_BTNTEXT
-				0xc0c0c0, //COLOR_INACTIVECAPTIONTEXT
-				0xffffff, //COLOR_3DHIGHLIGHT
-				0x000000, //COLOR_3DDKSHADOW
-				0xc0c0c0, //COLOR_3DLIGHT
-				0xffffff, //COLOR_INFOTEXT
-				0xffffc0, //COLOR_INFOBK
-				0xb8b4b8, //COLOR_ALTERNATEBTNFACE 
-				0x0000ff, //COLOR_HOTLIGHT
-				0x1020d0, //COLOR_GRADIENTACTIVECAPTION
-				0xb8b4b8, //COLOR_GRADIENTINACTIVECAPTION
-				0x000000, //COLOR_MENUHILIGHT
-				0x000000 //COLOR_MENUBAR
-			};
 			if (nColorIndex == 0xf0)
 			{
 				sys_color.SetRGB((unsigned char)(base_color), (unsigned char)(base_color >> 8), (unsigned char)(base_color >> 16));
 			}
-			else if (nColorIndex < 25)
+			else if (nColorIndex < 20)
 			{
-				if (type != 4 && (nColorIndex == 7 || nColorIndex == 8 || nColorIndex == 9 || nColorIndex == 14 || 
-					nColorIndex == 17 || nColorIndex == 18 || nColorIndex == 19 || nColorIndex == 23)) return;
-
-				sys_color.SetRGB((unsigned char)(systemColors[nColorIndex] >> 16), (unsigned char)(systemColors[nColorIndex] >> 8), (unsigned char)(systemColors[nColorIndex]));
+				// specduck: Word stores the index in the MS-ODRAW system colour order (MSOSYSCOLORINDEX less 0xF0:
+				// buttonFace, windowText, menu, highlight, ...; checked with Word's own .doc), not Windows COLOR_*:
+				// windowText came out teal (COLOR_BACKGROUND). Windows default values, as authors see them.
+				static const _UINT32 msoSystemColors[20] = {
+					0xF0F0F0, 0x000000, 0xF0F0F0, 0x0078D7, 0xFFFFFF, 0x000000, 0x99B4D1, 0xFFFFFF, 0xA0A0A0, 0x000000,
+					0x6D6D6D, 0xBFCDDB, 0x000000, 0xFFFFE1, 0x000000, 0x000000, 0xC8C8C8, 0xFFFFFF, 0x646464, 0xE3E3E3};
+				sys_color.SetRGB((unsigned char)(msoSystemColors[nColorIndex] >> 16), (unsigned char)(msoSystemColors[nColorIndex] >> 8), (unsigned char)(msoSystemColors[nColorIndex]));
 			}
 			else return;
 

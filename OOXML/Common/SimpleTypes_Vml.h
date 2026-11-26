@@ -1298,6 +1298,7 @@ namespace SimpleTypes
 	enum ECssLayoutFlowAlt
 	{
 		csslayoutflowaltBottomToTop = 0,
+		csslayoutflowaltTopToBottom = 1,
 	};
 
 	enum ECssMsoRotate

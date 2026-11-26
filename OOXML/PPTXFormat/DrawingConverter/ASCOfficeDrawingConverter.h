@@ -252,6 +252,7 @@ namespace NSBinPptxRW
         OOX::CContentTypes* GetContentTypes();
 //------------------------------------------------------------------------------------------------------------------------
 		std::map<std::wstring, CShapePtr> m_mapShapeTypes;
+		std::map<std::wstring, unsigned int> m_mapBuiltinShapeTypes;	// specduck: shapetype id -> o:spt, when Word's own
 		std::map<std::wstring, nullable<OOX::Logic::CBinData>> m_mapBinDatas;
 
 		NSBinPptxRW::CBinaryFileWriter* m_pBinaryWriter;

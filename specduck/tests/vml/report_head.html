@@ -1,0 +1,39 @@
+<title>VML 렌더링 시험</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: filter bar, then one row per case: Word reference + three renderings, differences under each. */
+:root { --bg:#f5f6f8; --panel:#ffffff; --fg:#1c2230; --muted:#5b6475; --line:#d7dbe3; --accent:#2f5d9a;
+  --bad:#c0392b; --bad-bg:#fbe9e7; --ok:#2e7d4f; --ok-bg:#e6f4ea; --chip:#eef1f6;
+  --sans:"IBM Plex Sans KR","Apple SD Gothic Neo",system-ui,sans-serif; --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#12151c; --panel:#1a1f29; --fg:#e3e7ef; --muted:#98a2b5; --line:#2e3646; --accent:#7ea8e6; --bad:#ef7d70; --bad-bg:#3a1f1d; --ok:#6fcf94; --ok-bg:#1b3326; --chip:#232a37; color-scheme:dark } }
+:root[data-theme="dark"] { --bg:#12151c; --panel:#1a1f29; --fg:#e3e7ef; --muted:#98a2b5; --line:#2e3646; --accent:#7ea8e6; --bad:#ef7d70; --bad-bg:#3a1f1d; --ok:#6fcf94; --ok-bg:#1b3326; --chip:#232a37; color-scheme:dark }
+body { background:var(--bg); color:var(--fg); font-family:var(--sans); font-size:14px; line-height:1.5; }
+main { max-width:1400px; margin:0 auto; padding-block:28px 64px; padding-left:max(16px, env(safe-area-inset-left,0px)); padding-right:max(16px, env(safe-area-inset-right,0px)); display:flex; flex-direction:column; gap:14px; }
+h1 { margin:0; font-size:1.6rem; } p { margin:0; max-width:90ch; } .muted { color:var(--muted); }
+.stats { display:flex; flex-wrap:wrap; gap:10px; }
+.stats div { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:8px 12px; }
+.stats b { font-variant-numeric:tabular-nums; font-size:1.1rem; }
+.bar { position:sticky; top:env(safe-area-inset-top,0px); z-index:5; background:var(--bg); padding-block:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; border-bottom:1px solid var(--line); }
+body::before { content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top,0px); z-index:10; background:var(--bg); }
+.bar select, .bar label { font:inherit; }
+.bar select { padding:4px 6px; border-radius:6px; border:1px solid var(--line); background:var(--panel); color:var(--fg); }
+.case { background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:10px 12px; display:flex; flex-direction:column; gap:8px; }
+.case h3 { margin:0; font-size:.95rem; font-weight:500; } .case h3 span { color:var(--muted); font-weight:400; margin-left:6px; }
+code { font-family:var(--mono); font-size:.9em; }
+.row { display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:10px; }
+@media (max-width:900px) { .row { grid-template-columns:repeat(2, minmax(0,1fr)); } }
+figure { margin:0; display:flex; flex-direction:column; gap:4px; min-width:0; }
+figcaption { font-size:.75rem; color:var(--muted); }
+figure img { max-width:100%; height:auto; background:#ffffff; border:1px solid var(--line); border-radius:4px; align-self:flex-start; }
+figure.bad img { border-color:var(--bad); }
+.empty { font-size:.8rem; color:var(--muted); padding:16px; border:1px dashed var(--line); border-radius:4px; }
+ul { margin:0; padding-left:1.1em; font-size:.78rem; color:var(--bad); overflow-wrap:anywhere; } li.okli { color:var(--ok); list-style:none; margin-left:-1.1em; }
+</style>
+<main>
+<h1>VML 렌더링 시험 (Word 기준)</h1>
+<p class="muted">시험 문서(make_corpus.py)의 VML 사례 {{TOTAL}}개를 Word for Mac이 그린 것과 비교합니다. 각 행의 왼쪽은 Word가 원본 docx를 그린 것(기준)이고, 다음은 x2t가 원본 docx를 그린 것, Word가 저장한 .doc을 x2t가 docx로 바꾼 뒤 Word와 x2t가 각각 그린 것입니다. 차이는 PDF 벡터 특징(크기, 곡선, 점선, 색, 그림, 글자와 방향)과 잉크 겹침(75% 미만)으로 자동 판정합니다. x2t는 specduck.1(/opt/x2t)입니다.</p>
+<div class="stats"><div>사례 <b>{{TOTAL}}</b></div><div>x2t 그리기 차이 <b>{{X2T}}</b></div><div>.doc 변환 후 Word 차이 <b>{{DOCWORD}}</b></div><div>.doc 변환 후 x2t 차이 <b>{{DOCX2T}}</b></div></div>
+<div class="bar"><label for="f-show">보기</label><select id="f-show"><option value="any">차이 있는 사례</option><option value="x2t">x2t 그리기 차이</option><option value="docword">.doc 변환 차이 (Word로 그려도)</option><option value="docx2t">.doc→x2t 최종 차이</option><option value="all">전체</option></select>
+<label for="f-group">종류</label><select id="f-group"><option value="">전체</option><option>prim</option><option>path</option><option>preset</option><option>stroke</option><option>rect</option><option>arrow</option><option>fill</option><option>rotation</option><option>flip</option><option>group</option><option>textbox</option><option>shadow</option><option>textpath</option><option>imagedata</option><option>float</option><option>connector</option></select>
+<span id="count" class="muted"></span></div>

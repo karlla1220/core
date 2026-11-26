@@ -34,6 +34,7 @@
  */
 
 #include "VMLShapeTypeMapping.h"
+#include "WordShapeTypes.h"
 #include "OfficeDrawing/Shapetypes/OvalType.h"
 #include "OfficeDrawing/Shapetypes/WordArtText.h"
 #include "../XlsFile/Format/Logic/Biff_structures/ODRAW/OfficeArtFOPTE.h"
@@ -59,6 +60,13 @@ namespace DocFileFormat
 
 		if (pShape && ( typeid(*pShape) != typeid(OvalType)))
 		{
+			// specduck: Word's own definition where there is one (see WordShapeTypes.h)
+			std::map<unsigned int, const wchar_t*>::const_iterator word = WordShapeTypes().find(pShape->GetTypeCode());
+			if (word != WordShapeTypes().end())
+			{
+				m_pXmlWriter->WriteString(word->second);
+				return;
+			}
             m_pXmlWriter->WriteNodeBegin( L"v:shapetype", true );
 
 			// ID

@@ -35,6 +35,8 @@
 #pragma once
 
 #include "FileInformationBlock.h"
+#include <map>
+#include <set>
 #include "OfficeDrawing/RecordFactory.h"
 
 #include "OfficeDrawing/DrawingContainer.h"
@@ -74,6 +76,9 @@ namespace DocFileFormat
 		const DrawingGroup* GetDrawingGroup () const;
 
 		unsigned int m_uLastShapeId;
+		// specduck: the shapetypes already written to each part (its writer): Word draws nothing for a shape whose
+		// shapetype id is written a second time
+		std::map<const void*, std::set<std::wstring>> m_mapWrittenShapeTypes;
 
 	private:
 		ShapeContainer* m_pBackgroud;

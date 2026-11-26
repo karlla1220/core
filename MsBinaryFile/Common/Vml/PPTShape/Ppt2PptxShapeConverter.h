@@ -174,6 +174,7 @@ class CFormulaConverter
 {
 private:
     int m_lIndexSrc;
+    bool m_bPathStart = false;	// specduck: the slice being converted is the first of its path
     int m_lIndexDst;
 
     LONG m_lX;

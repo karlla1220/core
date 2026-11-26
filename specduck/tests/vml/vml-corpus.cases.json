@@ -1,0 +1,1283 @@
+[
+{
+"id": "prim-rect",
+"desc": "v:rect"
+},
+{
+"id": "prim-roundrect",
+"desc": "v:roundrect arcsize=30%"
+},
+{
+"id": "prim-oval",
+"desc": "v:oval"
+},
+{
+"id": "prim-oval-typed",
+"desc": "v:oval with type=\"#_x0000_t3\" (as .doc writes it)"
+},
+{
+"id": "prim-line",
+"desc": "v:line from/to"
+},
+{
+"id": "prim-polyline",
+"desc": "v:polyline points"
+},
+{
+"id": "prim-curve",
+"desc": "v:curve from/control1/control2/to"
+},
+{
+"id": "prim-arc",
+"desc": "v:arc startangle=0 endangle=270"
+},
+{
+"id": "path-m-l-x-e",
+"desc": "v:shape path=\"m10,10l90,10,90,90,10,90xe\""
+},
+{
+"id": "path-r-relative-line",
+"desc": "v:shape path=\"m10,10r80,0,0,80,-80,0xe\""
+},
+{
+"id": "path-c-curve",
+"desc": "v:shape path=\"m5,50c30,-40,70,140,95,50e\""
+},
+{
+"id": "path-v-relative-curve",
+"desc": "v:shape path=\"m5,50v25,-90,65,90,90,0e\""
+},
+{
+"id": "path-t-relative-move",
+"desc": "v:shape path=\"m10,10l40,10t0,40l90,50e\""
+},
+{
+"id": "path-ar-arc",
+"desc": "v:shape path=\"ar10,10,90,90,90,50,10,50e\""
+},
+{
+"id": "path-at-arcto",
+"desc": "v:shape path=\"m50,90at10,10,90,90,50,90,90,50e\""
+},
+{
+"id": "path-wa-clockwise-arc",
+"desc": "v:shape path=\"wa10,10,90,90,90,50,10,50e\""
+},
+{
+"id": "path-wr-clockwise-arcto",
+"desc": "v:shape path=\"m50,90wr10,10,90,90,50,90,90,50e\""
+},
+{
+"id": "path-qx-qy-quadrants",
+"desc": "v:shape path=\"m10,90qx50,10qy90,90xe\""
+},
+{
+"id": "path-qb-quadratic",
+"desc": "v:shape path=\"m10,90qb50,-30,90,90e\"",
+"skip": {
+"*": "Word draws nothing for qb after an m (qb-starts-path covers qb)"
+}
+},
+{
+"id": "path-qb-starts-path",
+"desc": "v:shape path=\"qb10,90,50,-30,90,90e\""
+},
+{
+"id": "path-al-angle-ellipse",
+"desc": "v:shape path=\"al50,50,40,30,0,23592960e\""
+},
+{
+"id": "path-ae-angle-ellipse-to",
+"desc": "v:shape path=\"m10,50ae50,50,40,30,11796480,11796480e\""
+},
+{
+"id": "path-nf-ns",
+"desc": "v:shape path=\"m10,10l90,10,90,90,10,90xnfem20,30l80,30nse\""
+},
+{
+"id": "path-omitted-zeros",
+"desc": "v:shape path=\"m,l100,,100,100,,100xm25,l75,v14,,25,12,25,25c100,39,89,50,75,50l25,50c12,50,,39,,25,,12,12,,25,xe\""
+},
+{
+"id": "path-two-subpaths-hole",
+"desc": "v:shape path=\"m10,10l90,10,90,90,10,90xm30,30l30,70,70,70,70,30xe\""
+},
+{
+"id": "preset-4",
+"desc": "o:spt=4"
+},
+{
+"id": "preset-5",
+"desc": "o:spt=5"
+},
+{
+"id": "preset-6",
+"desc": "o:spt=6"
+},
+{
+"id": "preset-7",
+"desc": "o:spt=7"
+},
+{
+"id": "preset-9",
+"desc": "o:spt=9"
+},
+{
+"id": "preset-10",
+"desc": "o:spt=10"
+},
+{
+"id": "preset-11",
+"desc": "o:spt=11"
+},
+{
+"id": "preset-13",
+"desc": "o:spt=13"
+},
+{
+"id": "preset-15",
+"desc": "o:spt=15"
+},
+{
+"id": "preset-16",
+"desc": "o:spt=16"
+},
+{
+"id": "preset-21",
+"desc": "o:spt=21"
+},
+{
+"id": "preset-22",
+"desc": "o:spt=22"
+},
+{
+"id": "preset-23",
+"desc": "o:spt=23"
+},
+{
+"id": "preset-41",
+"desc": "o:spt=41"
+},
+{
+"id": "preset-42",
+"desc": "o:spt=42"
+},
+{
+"id": "preset-43",
+"desc": "o:spt=43"
+},
+{
+"id": "preset-44",
+"desc": "o:spt=44"
+},
+{
+"id": "preset-45",
+"desc": "o:spt=45"
+},
+{
+"id": "preset-46",
+"desc": "o:spt=46"
+},
+{
+"id": "preset-47",
+"desc": "o:spt=47"
+},
+{
+"id": "preset-48",
+"desc": "o:spt=48"
+},
+{
+"id": "preset-49",
+"desc": "o:spt=49"
+},
+{
+"id": "preset-50",
+"desc": "o:spt=50"
+},
+{
+"id": "preset-51",
+"desc": "o:spt=51"
+},
+{
+"id": "preset-52",
+"desc": "o:spt=52"
+},
+{
+"id": "preset-53",
+"desc": "o:spt=53"
+},
+{
+"id": "preset-54",
+"desc": "o:spt=54"
+},
+{
+"id": "preset-55",
+"desc": "o:spt=55"
+},
+{
+"id": "preset-56",
+"desc": "o:spt=56"
+},
+{
+"id": "preset-57",
+"desc": "o:spt=57"
+},
+{
+"id": "preset-58",
+"desc": "o:spt=58"
+},
+{
+"id": "preset-59",
+"desc": "o:spt=59"
+},
+{
+"id": "preset-60",
+"desc": "o:spt=60"
+},
+{
+"id": "preset-61",
+"desc": "o:spt=61"
+},
+{
+"id": "preset-62",
+"desc": "o:spt=62"
+},
+{
+"id": "preset-63",
+"desc": "o:spt=63"
+},
+{
+"id": "preset-64",
+"desc": "o:spt=64"
+},
+{
+"id": "preset-65",
+"desc": "o:spt=65"
+},
+{
+"id": "preset-66",
+"desc": "o:spt=66"
+},
+{
+"id": "preset-67",
+"desc": "o:spt=67"
+},
+{
+"id": "preset-68",
+"desc": "o:spt=68"
+},
+{
+"id": "preset-69",
+"desc": "o:spt=69"
+},
+{
+"id": "preset-70",
+"desc": "o:spt=70"
+},
+{
+"id": "preset-71",
+"desc": "o:spt=71"
+},
+{
+"id": "preset-72",
+"desc": "o:spt=72"
+},
+{
+"id": "preset-73",
+"desc": "o:spt=73"
+},
+{
+"id": "preset-77",
+"desc": "o:spt=77"
+},
+{
+"id": "preset-78",
+"desc": "o:spt=78"
+},
+{
+"id": "preset-79",
+"desc": "o:spt=79"
+},
+{
+"id": "preset-80",
+"desc": "o:spt=80"
+},
+{
+"id": "preset-81",
+"desc": "o:spt=81"
+},
+{
+"id": "preset-82",
+"desc": "o:spt=82"
+},
+{
+"id": "preset-84",
+"desc": "o:spt=84"
+},
+{
+"id": "preset-85",
+"desc": "o:spt=85"
+},
+{
+"id": "preset-86",
+"desc": "o:spt=86"
+},
+{
+"id": "preset-87",
+"desc": "o:spt=87"
+},
+{
+"id": "preset-88",
+"desc": "o:spt=88"
+},
+{
+"id": "preset-92",
+"desc": "o:spt=92"
+},
+{
+"id": "preset-93",
+"desc": "o:spt=93"
+},
+{
+"id": "preset-94",
+"desc": "o:spt=94"
+},
+{
+"id": "preset-96",
+"desc": "o:spt=96"
+},
+{
+"id": "preset-97",
+"desc": "o:spt=97"
+},
+{
+"id": "preset-98",
+"desc": "o:spt=98"
+},
+{
+"id": "preset-102",
+"desc": "o:spt=102"
+},
+{
+"id": "preset-103",
+"desc": "o:spt=103"
+},
+{
+"id": "preset-104",
+"desc": "o:spt=104"
+},
+{
+"id": "preset-105",
+"desc": "o:spt=105"
+},
+{
+"id": "preset-106",
+"desc": "o:spt=106"
+},
+{
+"id": "preset-107",
+"desc": "o:spt=107"
+},
+{
+"id": "preset-108",
+"desc": "o:spt=108"
+},
+{
+"id": "preset-109",
+"desc": "o:spt=109"
+},
+{
+"id": "preset-110",
+"desc": "o:spt=110"
+},
+{
+"id": "preset-111",
+"desc": "o:spt=111"
+},
+{
+"id": "preset-112",
+"desc": "o:spt=112"
+},
+{
+"id": "preset-113",
+"desc": "o:spt=113"
+},
+{
+"id": "preset-114",
+"desc": "o:spt=114"
+},
+{
+"id": "preset-115",
+"desc": "o:spt=115"
+},
+{
+"id": "preset-116",
+"desc": "o:spt=116"
+},
+{
+"id": "preset-117",
+"desc": "o:spt=117"
+},
+{
+"id": "preset-118",
+"desc": "o:spt=118"
+},
+{
+"id": "preset-119",
+"desc": "o:spt=119"
+},
+{
+"id": "preset-120",
+"desc": "o:spt=120"
+},
+{
+"id": "preset-121",
+"desc": "o:spt=121"
+},
+{
+"id": "preset-122",
+"desc": "o:spt=122"
+},
+{
+"id": "preset-123",
+"desc": "o:spt=123"
+},
+{
+"id": "preset-124",
+"desc": "o:spt=124"
+},
+{
+"id": "preset-125",
+"desc": "o:spt=125"
+},
+{
+"id": "preset-126",
+"desc": "o:spt=126"
+},
+{
+"id": "preset-127",
+"desc": "o:spt=127"
+},
+{
+"id": "preset-128",
+"desc": "o:spt=128"
+},
+{
+"id": "preset-129",
+"desc": "o:spt=129"
+},
+{
+"id": "preset-130",
+"desc": "o:spt=130"
+},
+{
+"id": "preset-131",
+"desc": "o:spt=131"
+},
+{
+"id": "preset-132",
+"desc": "o:spt=132"
+},
+{
+"id": "preset-133",
+"desc": "o:spt=133"
+},
+{
+"id": "preset-134",
+"desc": "o:spt=134"
+},
+{
+"id": "preset-135",
+"desc": "o:spt=135"
+},
+{
+"id": "preset-176",
+"desc": "o:spt=176"
+},
+{
+"id": "preset-177",
+"desc": "o:spt=177"
+},
+{
+"id": "preset-183",
+"desc": "o:spt=183"
+},
+{
+"id": "preset-184",
+"desc": "o:spt=184"
+},
+{
+"id": "preset-185",
+"desc": "o:spt=185"
+},
+{
+"id": "preset-186",
+"desc": "o:spt=186"
+},
+{
+"id": "preset-187",
+"desc": "o:spt=187"
+},
+{
+"id": "preset-188",
+"desc": "o:spt=188"
+},
+{
+"id": "preset-189",
+"desc": "o:spt=189"
+},
+{
+"id": "preset-190",
+"desc": "o:spt=190"
+},
+{
+"id": "preset-191",
+"desc": "o:spt=191"
+},
+{
+"id": "preset-192",
+"desc": "o:spt=192"
+},
+{
+"id": "preset-193",
+"desc": "o:spt=193"
+},
+{
+"id": "preset-194",
+"desc": "o:spt=194"
+},
+{
+"id": "preset-195",
+"desc": "o:spt=195"
+},
+{
+"id": "preset-196",
+"desc": "o:spt=196"
+},
+{
+"id": "preset-197",
+"desc": "o:spt=197"
+},
+{
+"id": "preset-198",
+"desc": "o:spt=198"
+},
+{
+"id": "preset-199",
+"desc": "o:spt=199"
+},
+{
+"id": "preset-200",
+"desc": "o:spt=200"
+},
+{
+"id": "stroke-weight-0.25pt",
+"desc": "strokeweight=0.25pt"
+},
+{
+"id": "stroke-weight-1pt",
+"desc": "strokeweight=1pt"
+},
+{
+"id": "stroke-weight-6pt",
+"desc": "strokeweight=6pt"
+},
+{
+"id": "stroke-dash-solid",
+"desc": "dashstyle=\"solid\""
+},
+{
+"id": "rect-dash-solid",
+"desc": "v:rect dashstyle=\"solid\""
+},
+{
+"id": "stroke-dash-shortdash",
+"desc": "dashstyle=\"shortdash\""
+},
+{
+"id": "rect-dash-shortdash",
+"desc": "v:rect dashstyle=\"shortdash\""
+},
+{
+"id": "stroke-dash-shortdot",
+"desc": "dashstyle=\"shortdot\""
+},
+{
+"id": "rect-dash-shortdot",
+"desc": "v:rect dashstyle=\"shortdot\""
+},
+{
+"id": "stroke-dash-shortdashdot",
+"desc": "dashstyle=\"shortdashdot\""
+},
+{
+"id": "rect-dash-shortdashdot",
+"desc": "v:rect dashstyle=\"shortdashdot\""
+},
+{
+"id": "stroke-dash-shortdashdotdot",
+"desc": "dashstyle=\"shortdashdotdot\""
+},
+{
+"id": "rect-dash-shortdashdotdot",
+"desc": "v:rect dashstyle=\"shortdashdotdot\""
+},
+{
+"id": "stroke-dash-dot",
+"desc": "dashstyle=\"dot\""
+},
+{
+"id": "rect-dash-dot",
+"desc": "v:rect dashstyle=\"dot\""
+},
+{
+"id": "stroke-dash-dash",
+"desc": "dashstyle=\"dash\""
+},
+{
+"id": "rect-dash-dash",
+"desc": "v:rect dashstyle=\"dash\""
+},
+{
+"id": "stroke-dash-longdash",
+"desc": "dashstyle=\"longdash\""
+},
+{
+"id": "rect-dash-longdash",
+"desc": "v:rect dashstyle=\"longdash\""
+},
+{
+"id": "stroke-dash-dashdot",
+"desc": "dashstyle=\"dashdot\""
+},
+{
+"id": "rect-dash-dashdot",
+"desc": "v:rect dashstyle=\"dashdot\""
+},
+{
+"id": "stroke-dash-longdashdot",
+"desc": "dashstyle=\"longdashdot\""
+},
+{
+"id": "rect-dash-longdashdot",
+"desc": "v:rect dashstyle=\"longdashdot\""
+},
+{
+"id": "stroke-dash-longdashdotdot",
+"desc": "dashstyle=\"longdashdotdot\""
+},
+{
+"id": "rect-dash-longdashdotdot",
+"desc": "v:rect dashstyle=\"longdashdotdot\""
+},
+{
+"id": "stroke-dash-1_1",
+"desc": "dashstyle=\"1 1\""
+},
+{
+"id": "rect-dash-1_1",
+"desc": "v:rect dashstyle=\"1 1\""
+},
+{
+"id": "stroke-dash-3_1",
+"desc": "dashstyle=\"3 1\""
+},
+{
+"id": "rect-dash-3_1",
+"desc": "v:rect dashstyle=\"3 1\""
+},
+{
+"id": "stroke-dash-4_2_1_2",
+"desc": "dashstyle=\"4 2 1 2\"",
+"skip": {
+"docword": "Word saves \"4 2 1 2\" to .doc as dashSys like \"3 1\", then draws only this one solid",
+"docx2t": "Word saves \"4 2 1 2\" to .doc as dashSys like \"3 1\", then draws only this one solid"
+}
+},
+{
+"id": "rect-dash-4_2_1_2",
+"desc": "v:rect dashstyle=\"4 2 1 2\"",
+"skip": {
+"docword": "Word saves \"4 2 1 2\" to .doc as dashSys like \"3 1\", then draws only this one solid",
+"docx2t": "Word saves \"4 2 1 2\" to .doc as dashSys like \"3 1\", then draws only this one solid"
+}
+},
+{
+"id": "stroke-dash-8_3_1_3_1_3",
+"desc": "dashstyle=\"8 3 1 3 1 3\""
+},
+{
+"id": "rect-dash-8_3_1_3_1_3",
+"desc": "v:rect dashstyle=\"8 3 1 3 1 3\""
+},
+{
+"id": "stroke-dash-case-dashDot",
+"desc": "dashstyle=\"dashDot\" (a name in mixed case, as in TS 38.827)"
+},
+{
+"id": "stroke-dash-case-longDashDotDot",
+"desc": "dashstyle=\"longDashDotDot\" (a name in mixed case, as in TS 38.827)"
+},
+{
+"id": "stroke-dash-case-ShortDash",
+"desc": "dashstyle=\"ShortDash\" (a name in mixed case, as in TS 38.827)"
+},
+{
+"id": "stroke-linestyle-single",
+"desc": "linestyle=single"
+},
+{
+"id": "stroke-linestyle-thinThin",
+"desc": "linestyle=thinThin"
+},
+{
+"id": "stroke-linestyle-thinThick",
+"desc": "linestyle=thinThick"
+},
+{
+"id": "stroke-linestyle-thickThin",
+"desc": "linestyle=thickThin"
+},
+{
+"id": "stroke-linestyle-thickBetweenThin",
+"desc": "linestyle=thickBetweenThin"
+},
+{
+"id": "stroke-endcap-flat",
+"desc": "endcap=flat"
+},
+{
+"id": "stroke-endcap-round",
+"desc": "endcap=round"
+},
+{
+"id": "stroke-endcap-square",
+"desc": "endcap=square"
+},
+{
+"id": "stroke-join-round",
+"desc": "joinstyle=round"
+},
+{
+"id": "stroke-join-bevel",
+"desc": "joinstyle=bevel"
+},
+{
+"id": "stroke-join-miter",
+"desc": "joinstyle=miter"
+},
+{
+"id": "arrow-block",
+"desc": "startarrow/endarrow=block"
+},
+{
+"id": "arrow-classic",
+"desc": "startarrow/endarrow=classic"
+},
+{
+"id": "arrow-oval",
+"desc": "startarrow/endarrow=oval"
+},
+{
+"id": "arrow-diamond",
+"desc": "startarrow/endarrow=diamond"
+},
+{
+"id": "arrow-open",
+"desc": "startarrow/endarrow=open"
+},
+{
+"id": "arrow-size-narrow-short",
+"desc": "endarrow=block narrow/short"
+},
+{
+"id": "arrow-size-narrow-long",
+"desc": "endarrow=block narrow/long"
+},
+{
+"id": "arrow-size-medium-short",
+"desc": "endarrow=block medium/short"
+},
+{
+"id": "arrow-size-medium-long",
+"desc": "endarrow=block medium/long"
+},
+{
+"id": "arrow-size-wide-short",
+"desc": "endarrow=block wide/short"
+},
+{
+"id": "arrow-size-wide-long",
+"desc": "endarrow=block wide/long"
+},
+{
+"id": "arrow-start-size-narrow-short",
+"desc": "startarrow=classic narrow/short"
+},
+{
+"id": "arrow-start-size-narrow-long",
+"desc": "startarrow=classic narrow/long"
+},
+{
+"id": "arrow-start-size-wide-short",
+"desc": "startarrow=classic wide/short"
+},
+{
+"id": "arrow-start-size-wide-long",
+"desc": "startarrow=classic wide/long"
+},
+{
+"id": "arrow-on-path",
+"desc": "arrows on an open v:shape path"
+},
+{
+"id": "stroke-off",
+"desc": "stroked=f"
+},
+{
+"id": "stroke-opacity",
+"desc": "stroke opacity=50%"
+},
+{
+"id": "stroke-color",
+"desc": "stroke color=red"
+},
+{
+"id": "fill-none",
+"desc": "filled=f"
+},
+{
+"id": "fill-opacity",
+"desc": "fill opacity=40%"
+},
+{
+"id": "fill-gradient-0",
+"desc": "gradient angle=0"
+},
+{
+"id": "fill-gradient-45",
+"desc": "gradient angle=45"
+},
+{
+"id": "fill-gradient-90",
+"desc": "gradient angle=90"
+},
+{
+"id": "fill-gradient--135",
+"desc": "gradient angle=-135"
+},
+{
+"id": "fill-gradient-focus",
+"desc": "gradient focus=50% (reflected)"
+},
+{
+"id": "fill-gradient-colors",
+"desc": "gradient colors=\"0 \u2026;.5 \u2026;1 \u2026\""
+},
+{
+"id": "fill-gradient-radial",
+"desc": "gradientRadial focusposition=.5,.5"
+},
+{
+"id": "fill-gradient-opacity2",
+"desc": "gradient o:opacity2"
+},
+{
+"id": "fill-pattern",
+"desc": "type=pattern, Word bitmap (wdUpDiag), black on white"
+},
+{
+"id": "fill-pattern-colored",
+"desc": "type=pattern, Word bitmap (wdUpDiag), red on yellow"
+},
+{
+"id": "fill-pattern-custom",
+"desc": "type=pattern, a bitmap that is no Word preset"
+},
+{
+"id": "fill-pattern-no-fillcolor",
+"desc": "type=pattern, no fillcolor (VML: white)"
+},
+{
+"id": "fill-tile",
+"desc": "type=tile"
+},
+{
+"id": "fill-tile-72dpi",
+"desc": "type=tile, picture stating 72 dpi"
+},
+{
+"id": "fill-tile-96dpi",
+"desc": "type=tile, picture stating 96 dpi"
+},
+{
+"id": "fill-tile-300dpi",
+"desc": "type=tile, picture stating 300 dpi"
+},
+{
+"id": "fill-frame",
+"desc": "type=frame (stretched picture)"
+},
+{
+"id": "rotation-30",
+"desc": "rotation:30"
+},
+{
+"id": "rotation-90",
+"desc": "rotation:90"
+},
+{
+"id": "rotation--90",
+"desc": "rotation:-90"
+},
+{
+"id": "rotation-180",
+"desc": "rotation:180"
+},
+{
+"id": "rotation-315",
+"desc": "rotation:315"
+},
+{
+"id": "rotation--90.0014",
+"desc": "rotation:-90.0014"
+},
+{
+"id": "flip-x",
+"desc": "flip:x"
+},
+{
+"id": "flip-y",
+"desc": "flip:y"
+},
+{
+"id": "flip-xy",
+"desc": "flip:x y"
+},
+{
+"id": "rotation-flip",
+"desc": "rotation:45;flip:x"
+},
+{
+"id": "group-basic",
+"desc": "v:group coordsize, three children"
+},
+{
+"id": "group-coordorigin-x-only",
+"desc": "child group coordorigin=\"1000\" (y omitted, as Word writes a zero)"
+},
+{
+"id": "group-coordorigin",
+"desc": "v:group coordorigin=-500,-200"
+},
+{
+"id": "group-rotation",
+"desc": "v:group rotation:20"
+},
+{
+"id": "group-flip",
+"desc": "v:group flip:x"
+},
+{
+"id": "group-nested",
+"desc": "group inside group, inner coordsize differs"
+},
+{
+"id": "group-child-rotation",
+"desc": "rotated child in group"
+},
+{
+"id": "group-child-line",
+"desc": "v:line in group (from/to in group coordinates)"
+},
+{
+"id": "textbox-plain",
+"desc": "text box"
+},
+{
+"id": "textbox-inset",
+"desc": "inset=20pt,2pt,2pt,2pt"
+},
+{
+"id": "textbox-center",
+"desc": "centred paragraph"
+},
+{
+"id": "textbox-flow-horizontal",
+"desc": "layout-flow:horizontal"
+},
+{
+"id": "textbox-flow-vertical",
+"desc": "layout-flow:vertical"
+},
+{
+"id": "textbox-flow-vertical-ideographic",
+"desc": "layout-flow:vertical-ideographic"
+},
+{
+"id": "textbox-flow-horizontal-ideographic",
+"desc": "layout-flow:horizontal-ideographic"
+},
+{
+"id": "textbox-flow-alt-bottom-to-top",
+"desc": "layout-flow:vertical;mso-layout-flow-alt:bottom-to-top"
+},
+{
+"id": "textbox-flow-alt-top-to-bottom",
+"desc": "layout-flow:vertical;mso-layout-flow-alt:top-to-bottom"
+},
+{
+"id": "textbox-anchor-top",
+"desc": "v-text-anchor:top"
+},
+{
+"id": "textbox-anchor-middle",
+"desc": "v-text-anchor:middle"
+},
+{
+"id": "textbox-anchor-bottom",
+"desc": "v-text-anchor:bottom"
+},
+{
+"id": "textbox-rotated",
+"desc": "text box rotation:90"
+},
+{
+"id": "textbox-fit",
+"desc": "mso-fit-shape-to-text:t"
+},
+{
+"id": "textbox-in-group",
+"desc": "vertical text box in group"
+},
+{
+"id": "shadow",
+"desc": "v:shadow on offset 4pt"
+},
+{
+"id": "shadow-opacity",
+"desc": "v:shadow opacity 50%"
+},
+{
+"id": "textpath",
+"desc": "v:textpath (WordArt)"
+},
+{
+"id": "imagedata",
+"desc": "picture frame v:imagedata"
+},
+{
+"id": "imagedata-crop",
+"desc": "imagedata croptop/cropleft 25%"
+},
+{
+"id": "imagedata-gray",
+"desc": "imagedata grayscale"
+},
+{
+"id": "float-pieces",
+"desc": "five floating pieces in one paragraph form one figure"
+},
+{
+"id": "float-zorder",
+"desc": "overlapping, z-index decides which is on top"
+},
+{
+"id": "float-behind-text",
+"desc": "negative z-index, behind text"
+},
+{
+"id": "float-two-paragraphs",
+"desc": "one figure anchored in two paragraphs"
+},
+{
+"id": "float-relative-margin",
+"desc": "mso-position-horizontal-relative:margin"
+},
+{
+"id": "float-rotation-60",
+"desc": "floating arrow rotation:60"
+},
+{
+"id": "group-child-rotation-60",
+"desc": "arrow in a group, rotation:60"
+},
+{
+"id": "float-rotation-90",
+"desc": "floating arrow rotation:90"
+},
+{
+"id": "group-child-rotation-90",
+"desc": "arrow in a group, rotation:90"
+},
+{
+"id": "float-rotation-120",
+"desc": "floating arrow rotation:120"
+},
+{
+"id": "group-child-rotation-120",
+"desc": "arrow in a group, rotation:120"
+},
+{
+"id": "float-page-relative",
+"desc": "mso-position-horizontal/vertical-relative:page"
+},
+{
+"id": "float-position-center",
+"desc": "mso-position-horizontal:center relative to the margin"
+},
+{
+"id": "float-percent-size",
+"desc": "mso-width-percent:500 of the margin"
+},
+{
+"id": "imagedata-chromakey",
+"desc": "picture with chromakey=white over a red rectangle"
+},
+{
+"id": "imagedata-crop-right-bottom",
+"desc": "imagedata cropright/cropbottom 25%"
+},
+{
+"id": "line-flip",
+"desc": "v:line style flip:y, connector straight"
+},
+{
+"id": "line-rotation",
+"desc": "v:line style rotation:30"
+},
+{
+"id": "group-canvas",
+"desc": "v:group editas=canvas (a drawing canvas)"
+},
+{
+"id": "textbox-linked",
+"desc": "two text boxes linked by mso-next-textbox"
+},
+{
+"id": "shape-spt100",
+"desc": "v:shape o:spt=100 (a freeform) with its own path"
+},
+{
+"id": "group-spt100",
+"desc": "freeform o:spt=100 with its own path inside a group"
+},
+{
+"id": "float-wrap-top-bottom",
+"desc": "w10:wrap type=topAndBottom between two paragraphs"
+},
+{
+"id": "imagedata-linked-and-embedded",
+"desc": "imagedata with r:id and an r:href to a missing file"
+},
+{
+"id": "syscolor-windowText",
+"desc": "system colour windowText as fill (a rectangle) and stroke (the next one)"
+},
+{
+"id": "syscolor-window",
+"desc": "system colour window as fill (a rectangle) and stroke (the next one)"
+},
+{
+"id": "syscolor-buttonFace",
+"desc": "system colour buttonFace as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "syscolor-buttonShadow",
+"desc": "system colour buttonShadow as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "syscolor-highlight",
+"desc": "system colour highlight as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "syscolor-grayText",
+"desc": "system colour grayText as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "syscolor-infoBackground",
+"desc": "system colour infoBackground as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "syscolor-threeDShadow",
+"desc": "system colour threeDShadow as fill (a rectangle) and stroke (the next one)",
+"skip": {
+"*": "Word for Mac draws system colours in macOS values; specDuck keeps the Windows defaults, as authors see them"
+}
+},
+{
+"id": "fill-child-off",
+"desc": "v:fill on=\"f\""
+},
+{
+"id": "stroke-child-off",
+"desc": "v:stroke on=\"f\""
+},
+{
+"id": "float-hidden",
+"desc": "visibility:hidden (Word draws nothing)"
+},
+{
+"id": "float-align-right-top",
+"desc": "mso-position-horizontal:right;mso-position-vertical:top (margin)"
+},
+{
+"id": "float-align-left-bottom",
+"desc": "mso-position-horizontal:left;mso-position-vertical:bottom (margin)"
+},
+{
+"id": "float-percent-position",
+"desc": "mso-left-percent:400;mso-top-percent:300 of the page"
+},
+{
+"id": "rect-hr",
+"desc": "v:rect o:hr (horizontal rule)",
+"skip": {
+"docword": "Word draws its own horizontal rule back from .doc as a vertical line",
+"docx2t": "Word draws its own horizontal rule back from .doc as a vertical line"
+}
+},
+{
+"id": "oval-rotation",
+"desc": "v:oval rotation:30"
+},
+{
+"id": "stroke-miterlimit",
+"desc": "joinstyle=miter miterlimit=2 on a sharp angle"
+},
+{
+"id": "ole-tool-type",
+"desc": "picture-frame shapetype with a bogus o:spt and type without \"#\" (a non-Word writer)"
+},
+{
+"id": "connector-straight",
+"desc": "o:spt=32 straight connector with arrow"
+},
+{
+"id": "connector-elbow",
+"desc": "o:spt=34 elbow connector"
+},
+{
+"id": "connector-float-vertical",
+"desc": "floating straight connector, width 0, flip:y, arrow (TS 38.521-4)"
+},
+{
+"id": "connector-flip",
+"desc": "straight connector flip:y"
+}
+]

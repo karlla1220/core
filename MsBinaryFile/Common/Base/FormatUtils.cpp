@@ -341,7 +341,9 @@ bool DocFileFormat::FormatUtils::GetSTLCollectionFromBytes(std::vector<wchar_t>*
 		int nCurrent = 0;
 		while (nCurrent < nCount)
 		{
-			if (*pShort < 0xD800 || *pShort > 0xDBFF)
+			// specduck: a high surrogate that ends the buffer has its low one in the next read (a run boundary between
+			// them): kept as it is, not paired with whatever lies past the end
+			if (*pShort < 0xD800 || *pShort > 0xDBFF || nCurrent + 1 >= nCount)
 			{
 				STLCollection->push_back((wchar_t)(*pShort));
 				++pShort;

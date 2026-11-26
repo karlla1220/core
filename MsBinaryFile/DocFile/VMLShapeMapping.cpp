@@ -245,6 +245,15 @@ namespace DocFileFormat
 
 		std::vector<ODRAW::OfficeArtFOPTEPtr> options = pContainer->ExtractOptions();
 
+		// specduck: the shapetype before the first shape that uses it, once per part (m_pCaller: an inline shape of a
+		// picture, such as a horizontal rule, is written through a writer of its own), as Word writes it
+		if (NULL != pShape->GetShapeType() && !pShape->fBackground &&
+			m_context->_doc->GetOfficeArt()->m_mapWrittenShapeTypes[m_pCaller].insert(VMLShapeTypeMapping::GenerateTypeId(pShape->GetShapeType())).second)
+		{
+			VMLShapeTypeMapping oXmlMapper(m_pXmlWriter, m_isInlineShape);
+			pShape->GetShapeType()->Convert(&oXmlMapper);
+		}
+
 		ChildAnchor* pAnchor = pContainer->FirstChildWithType<ChildAnchor>();
 		ClientAnchor* clientAnchor = pContainer->FirstChildWithType<ClientAnchor>();
 
@@ -672,6 +681,16 @@ namespace DocFileFormat
 				if ((pFillBlip != NULL) && copyPicture(pFillBlip))
 				{
 					appendValueAttribute(&m_fill, L"r:id", std::wstring((L"rId") + std::to_wstring(m_nImageId)));
+					// specduck: Word draws a fill picture only with an o:title (it writes o:title="" itself)
+					bool bTitled = false;
+					for (size_t t = 0; t < options.size(); ++t)
+					{
+						ODRAW::AnyString* name = options[t]->opid == ODRAW::fillBlipName ? dynamic_cast<ODRAW::AnyString*>(options[t].get()) : NULL;
+						if (name && !name->string_.empty())
+							bTitled = true;
+					}
+					if (!bTitled)
+						appendValueAttribute(&m_fill, L"o:title", L"");
 				}
 
 				bPicturePresent = true;
@@ -1381,12 +1400,6 @@ namespace DocFileFormat
 			}
 		}
 
-//ShapeType 
-		if (NULL != pShape->GetShapeType() /* && !m_isInlineShape*/) //bullete only???
-		{
-			VMLShapeTypeMapping oXmlMapper(m_pXmlWriter, m_isInlineShape);
-			pShape->GetShapeType()->Convert(&oXmlMapper);
-		}
 	}
 
 	//
@@ -1581,6 +1594,7 @@ namespace DocFileFormat
 	bool VMLShapeMapping::copyPicture(BlipStoreEntry* oBlip)
 	{
 		bool result = false;
+		std::wstring sExt;
 
 		//write the blip
 		if (oBlip)
@@ -1637,7 +1651,10 @@ namespace DocFileFormat
 								break;
 							}//in case of conversion error - keep original dib
 						}
-						m_context->_docx->ImagesList.push_back(ImageFileStructure(GetTargetExt(oBlip->btWin32), 
+						// specduck: Word keeps a fill pattern's GIF in a PNG blip; a .png name makes Word drop the fill
+						if (bitBlip->pvBitsSize > 4 && 0 == memcmp(bitBlip->m_pvBits, "GIF8", 4))
+							sExt = L".gif";
+						m_context->_docx->ImagesList.push_back(ImageFileStructure(sExt.empty() ? GetTargetExt(oBlip->btWin32) : sExt, 
 							bitBlip->m_pvBits, bitBlip->pvBitsSize, oBlip->btWin32));
 						RELEASEOBJECT (bitBlip);
 						result = true;
@@ -1652,7 +1669,7 @@ namespace DocFileFormat
 		}
 		if (result)
 		{
-			m_nImageId = m_context->_docx->RegisterImage (m_pCaller, oBlip->btWin32);
+			m_nImageId = m_context->_docx->RegisterImage (m_pCaller, oBlip->btWin32, sExt);
 		}
 		return result;
 	}

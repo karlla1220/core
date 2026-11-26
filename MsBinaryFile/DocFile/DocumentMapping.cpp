@@ -81,6 +81,8 @@ namespace DocFileFormat
 
 	DocumentMapping::~DocumentMapping()
 	{
+		if (m_document && m_document->GetOfficeArt())		// specduck: the next part may get this address
+			m_document->GetOfficeArt()->m_mapWrittenShapeTypes.erase(static_cast<IMapping*>(this));
 		if (m_bInternalXmlWriter)
 		{
 			RELEASEOBJECT(m_pXmlWriter);
@@ -925,6 +927,22 @@ namespace DocFileFormat
 		for (size_t i = 0; i < chars->size(); ++i)
 		{
 			wchar_t c = chars->at(i), code = c;
+
+			// specduck: a character outside the BMP is two UTF-16 units, and a run may end between them (TS 38.423
+			// 15.5.0). The run's own read leaves the halves apart; the document text holds the whole character at the
+			// high one's cp, which Word writes in the first run.
+			if (c >= 0xDC00 && c <= 0xDFFF && cp == _lowSurrogateWrittenAt)
+			{
+				cp++;
+				continue;
+			}
+			if (c >= 0xD800 && c <= 0xDBFF && m_document->Text && cp < (int)m_document->Text->size() && m_document->Text->at(cp) > 0xFFFF)
+			{
+				text += FormatUtils::GetXMLSymbol(m_document->Text->at(cp));
+				_lowSurrogateWrittenAt = cp + 1;
+				cp++;
+				continue;
+			}
 
 			if (cp > _skipCharsFrom && cp < _skipCharsTo)
 			{// inside an embedded object's field, already written (the end mark itself is handled below)

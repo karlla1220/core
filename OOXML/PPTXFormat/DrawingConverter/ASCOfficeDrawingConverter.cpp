@@ -34,6 +34,7 @@
  */
 
 #include "ASCOfficeDrawingConverter.h"
+#include <sstream>
 
 #include "../../PPTXFormat/Logic/SpTreeElem.h"
 #include "../../PPTXFormat/Logic/Geometry.h"
@@ -64,6 +65,9 @@
 #include "../../DocxFormat/Diagram/DiagramDrawing.h"
 #include "../../DocxFormat/Drawing/DrawingExt.h"
 #include "../../DocxFormat/Media/Image.h"
+#include "../../../MsBinaryFile/DocFile/WordShapeTypes.h"
+#include "WordPresetGeometry.h"
+#include "../../../DesktopEditor/raster/BgraFrame.h"
 #include "../../Common/SimpleTypes_Base.h"
 #include "../../Common/SimpleTypes_Vml.h"
 
@@ -630,7 +634,26 @@ namespace NS_DWC_Common
 			else
 				str = colorStr.substr(0, pos);
 
-			switch (str[0])
+			// specduck: the CSS system colours VML uses (Word writes strokecolor="windowText"; the table below had it as
+			// "windowsText"), case-insensitive, with the Windows default values
+			static const std::map<std::wstring, int> system = {
+				{L"activeborder", 0xB4B4B4}, {L"activecaption", 0x99B4D1}, {L"appworkspace", 0xABABAB}, {L"background", 0x000000},
+				{L"buttonface", 0xF0F0F0}, {L"buttonhighlight", 0xFFFFFF}, {L"buttonshadow", 0xA0A0A0}, {L"buttontext", 0x000000},
+				{L"captiontext", 0x000000}, {L"graytext", 0x6D6D6D}, {L"highlight", 0x0078D7}, {L"highlighttext", 0xFFFFFF},
+				{L"inactiveborder", 0xF4F7FC}, {L"inactivecaption", 0xBFCDDB}, {L"inactivecaptiontext", 0x000000},
+				{L"infobackground", 0xFFFFE1}, {L"infotext", 0x000000}, {L"menu", 0xF0F0F0}, {L"menutext", 0x000000},
+				{L"scrollbar", 0xC8C8C8}, {L"threeddarkshadow", 0x696969}, {L"threedface", 0xF0F0F0}, {L"threedhighlight", 0xFFFFFF},
+				{L"threedlightshadow", 0xE3E3E3}, {L"threedshadow", 0xA0A0A0}, {L"window", 0xFFFFFF}, {L"windowframe", 0x646464},
+				{L"windowtext", 0x000000}};
+			std::wstring lower = str;
+			std::transform(lower.begin(), lower.end(), lower.begin(), ::towlower);
+			std::map<std::wstring, int>::const_iterator sys = system.find(lower);
+			if (sys != system.end())
+			{
+				RGB = sys->second;
+				bSet = true;
+			}
+			else switch (str.empty() ? L' ' : str[0])
 			{
 			case 'a':
 				if (str == L"aliceBlue") { RGB = 0xF0F8FF; bSet = true; break; } // (Alice Blue Preset Color)		Specifies a color with RGB value (240,248,255)
@@ -1312,6 +1335,7 @@ void CDrawingConverter::SetMediaDstPath(const std::wstring& sPath)
 void CDrawingConverter::Clear()
 {
 	m_mapShapeTypes.clear();
+	m_mapBuiltinShapeTypes.clear();
 	m_mapBinDatas.clear();
 }
 void CDrawingConverter::AddBinData(XmlUtils::CXmlNode& oNode)
@@ -1322,6 +1346,34 @@ void CDrawingConverter::AddBinData(XmlUtils::CXmlNode& oNode)
 	nullable<OOX::Logic::CBinData> data(oNode);
 	m_mapBinDatas.insert(std::make_pair(name, data));
 }
+// specduck: whether a shapetype is Word's own definition of its legacy type (WordShapeTypes.h): its path, adj, formulas,
+// text box and limo. Word draws such a shape with its built-in look (the preset geometry: a cube's shaded faces, a
+// bracket pair's round corners) and any other definition from its path, so only these become preset geometry.
+static bool IsWordBuiltinShapeType(XmlUtils::CXmlNode& node, unsigned int spt)
+{
+	std::map<unsigned int, const wchar_t*>::const_iterator word = DocFileFormat::WordShapeTypes().find(spt);
+	if (word == DocFileFormat::WordShapeTypes().end())
+		return false;
+	XmlUtils::CXmlNode root, ref;
+	if (!root.FromXmlString(L"<r xmlns:v=\"urn:schemas-microsoft-com:vml\" xmlns:o=\"urn:schemas-microsoft-com:office:office\">"
+			+ std::wstring(word->second) + L"</r>") || !root.GetNode(L"v:shapetype", ref))
+		return false;
+	auto key = [](XmlUtils::CXmlNode& n) {
+		std::wstring k = n.GetAttribute(L"path") + L"|" + n.GetAttribute(L"adj") + L"|";
+		XmlUtils::CXmlNode formulas, path;
+		if (n.GetNode(L"v:formulas", formulas))
+		{
+			std::vector<XmlUtils::CXmlNode> fs;
+			formulas.GetNodes(L"v:f", fs);
+			for (XmlUtils::CXmlNode& f : fs) k += f.GetAttribute(L"eqn") + L";";
+		}
+		if (n.GetNode(L"v:path", path))
+			k += L"|" + path.GetAttribute(L"textboxrect") + L"|" + path.GetAttribute(L"limo");
+		return k;
+	};
+	return key(node) == key(ref);
+}
+
 void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 {
 	std::wstring strId = oNode.GetAttribute(L"id");
@@ -1336,7 +1388,6 @@ void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 	}
 
 	if (strId.empty()) return;
-	//if (m_mapShapeTypes.find(strId) == m_mapShapeTypes.end())//?? with overwriting ???
 	{
 		CPPTShape* pShape = new CPPTShape();
 		pShape->m_bIsShapeType = true;
@@ -1348,7 +1399,14 @@ void CDrawingConverter::AddShapeType(XmlUtils::CXmlNode& oNode)
 		
 		LoadCoordSize(oNode, pS);
 
-		m_mapShapeTypes.insert(std::make_pair(strId, pS));			
+		// specduck: a later definition of the id replaces the earlier one: Word draws a shape with the one before it
+		m_mapShapeTypes[strId] = pS;
+		std::wstring sSpt = oNode.GetAttribute(L"o:spt");
+		if (!sSpt.empty() && std::all_of(sSpt.begin(), sSpt.end(), ::iswdigit)
+			&& IsWordBuiltinShapeType(oNode, (unsigned int)XmlUtils::GetInteger(sSpt)))
+			m_mapBuiltinShapeTypes[strId] = (unsigned int)XmlUtils::GetInteger(sSpt);
+		else
+			m_mapBuiltinShapeTypes.erase(strId);
 	}
 }
 void CDrawingConverter::AddShapeType(const std::wstring& bsXml)
@@ -1470,7 +1528,7 @@ void CDrawingConverter::ConvertVml(const std::wstring& sXml, std::vector<nullabl
 							L"background" == strNameP ||
 							L"roundrect" == strNameP ||
 							L"image" == strNameP ||
-							L"polyline" == strNameP)
+							L"polyline" == strNameP || L"curve" == strNameP || L"arc" == strNameP)
 						{
 							if (false == pElem.IsInit())
 							{
@@ -1652,7 +1710,7 @@ bool CDrawingConverter::ParceObject(const std::wstring& strXml, std::wstring* pM
                             L"background"== strNameP ||
                             L"roundrect" == strNameP ||
                             L"image"	 == strNameP ||
-                            L"polyline"  == strNameP)
+                            L"polyline"  == strNameP || L"curve" == strNameP || L"arc" == strNameP)
 						{
 							if(NULL == pElem)
 							{
@@ -1838,6 +1896,7 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 	bool bStroked			= true;
 	bool bHidden			= false;
 	bool bShapeTypeSet		= true;
+	unsigned int nBuiltinSpt = 0;	// specduck: the shape's legacy type, when its shapetype is Word's own
 
     std::wstring strStyleAdvenced = L"";
 
@@ -1938,85 +1997,118 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			}
 		}
 	}
-    else if (L"v:polyline" == strNameNode)
+    else if (L"v:polyline" == strNameNode || L"v:curve" == strNameNode)
 	{
-        std::wstring strPoints = oNodeShape.GetAttributeOrValue(L"points");
-        if (L"" != strPoints)
+		// specduck: the points are in the parent's units (with a unit at the top level). The shape is their bounding
+		// box at the style's position plus the box's corner. The box was written in EMU without a unit, read back as
+		// points: a shape 12700 times too big, never seen. v:curve is from, control1, control2, to.
+		std::vector<std::wstring> oArray;
+		if (L"v:polyline" == strNameNode)
 		{
-			std::vector<std::wstring> oArray;
-            boost::algorithm::split(oArray, strPoints, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-			int nSize = (int)oArray.size();
-			if ((nSize % 2 == 0) && nSize > 3)
+			std::wstring strPoints = oNodeShape.GetAttributeOrValue(L"points");
+			boost::algorithm::split(oArray, strPoints, boost::algorithm::is_any_of(L","));
+		}
+		else
+		{
+			for (const wchar_t* name : {L"from", L"control1", L"control2", L"to"})
 			{
-				int* _POINTS = new int[nSize];
-				double dKoef = 25.4 * 36000 / 72.0;
-
-				for (int k = 0; k < nSize; ++k)
-				{
-                    if (L"" == oArray[k])
-					{
-						_POINTS[k] = 0;
-					}
-					else
-					{
-						SimpleTypes::CPoint parserPoint;
-						_POINTS[k] = (int)(dKoef * parserPoint.FromString(oArray[k]));
-					}
-				}
-
-				// now define bounds
-				int _x = INT_MAX;
-				int _y = INT_MAX;
-				int _r = INT_MIN;
-				int _b = INT_MIN;
-
-				for (int k = 0; k < nSize; k += 2)
-				{
-					int tmpx = _POINTS[k];
-					int tmpy = _POINTS[k + 1];
-					if (tmpx < _x)
-						_x = tmpx;
-					if (tmpx > _r)
-						_r = tmpx;
-					if (tmpy < _y)
-						_y = tmpy;
-					if (tmpy > _b)
-						_b = tmpy;
-				}
-
-				int nOffsetX = _POINTS[0] - _x;
-				int nOffsetY = _POINTS[1] - _y;
-
-                strStyleAdvenced += L";margin-left:" + std::to_wstring(_x) + L";margin-top:" + std::to_wstring(_y)
-                        + L";width:" + std::to_wstring(_r - _x) + L";height:" + std::to_wstring(_b - _y) + L";polyline_correct:true;";
-
-                double dKoefX = 21600.0 / (std::max)((_r - _x), 1);
-                double dKoefY = 21600.0 / (std::max)((_b - _y), 1);
-                std::wstring strPath;
-				for (int k = 0; k < nSize; k += 2)
-				{
-                    std::wstring _s;
-                    if (k == 0) _s = L"m";
-                    else        _s = L"l";
-
-                    strPath += _s + std::to_wstring((int)(dKoefX * (_POINTS[k] - _x))) + L"," + std::to_wstring((int)(dKoefY * (_POINTS[k + 1] - _y)));
-                }
-
-                strPath += L"e";
-
-				RELEASEARRAYOBJECTS(_POINTS);
-
-				pPPTShape = new CPPTShape();
-				pPPTShape->SetShapeType((PPTShapes::ShapeType)1);
-				// otherwise rect will be preserved
-				pPPTShape->m_eType = PPTShapes::sptCustom;
-
-				pPPTShape->LoadPathList(strPath);
-				pPPTShape->ReCalculate();
-				bIsNeedCoordSizes = false;
+				std::vector<std::wstring> pair;
+				std::wstring value = oNodeShape.GetAttributeOrValue(name);
+				boost::algorithm::split(pair, value, boost::algorithm::is_any_of(L","));
+				pair.resize(2);
+				oArray.insert(oArray.end(), pair.begin(), pair.end());
 			}
-		}		
+		}
+		int nSize = (int)oArray.size();
+		if ((nSize % 2 == 0) && nSize >= 4)
+		{
+			SimpleTypes::CPoint parserPoint;
+			std::vector<double> pts(nSize);
+			for (int k = 0; k < nSize; ++k)
+			{
+				std::wstring v = boost::algorithm::trim_copy(oArray[k]);
+				pts[k] = v.empty() ? 0 : parserPoint.FromString(v);
+			}
+			double _x = pts[0], _y = pts[1], _r = pts[0], _b = pts[1];
+			for (int k = 0; k < nSize; k += 2)
+			{
+				_x = (std::min)(_x, pts[k]);	_r = (std::max)(_r, pts[k]);
+				_y = (std::min)(_y, pts[k + 1]);	_b = (std::max)(_b, pts[k + 1]);
+			}
+			std::wstring unit = bIsTop ? L"pt" : L"";
+			PPTX::CCSS oOwnStyle;
+			std::wstring sOwnStyle = oNodeShape.GetAttribute(L"style");
+			oOwnStyle.LoadFromString2(sOwnStyle);
+			for (const auto& axis : {std::make_pair(std::wstring(L"left"), _x), std::make_pair(std::wstring(L"top"), _y)})
+			{
+				std::wstring key = L"margin-" + axis.first;
+				std::map<std::wstring, std::wstring>::iterator own = oOwnStyle.m_mapSettings.find(key);
+				if (own == oOwnStyle.m_mapSettings.end())
+				{
+					key = axis.first;
+					own = oOwnStyle.m_mapSettings.find(key);
+				}
+				if (own != oOwnStyle.m_mapSettings.end())	// GetDrawingMainProps adds up comma-separated values
+					strStyleAdvenced += L";" + key + L":" + own->second + L"," + XmlUtils::ToString(axis.second, L"%.4lf") + unit;
+				else if (!bIsTop)
+					strStyleAdvenced += L";" + key + L":" + XmlUtils::ToString(axis.second, L"%.4lf");
+			}
+			strStyleAdvenced += L";width:" + XmlUtils::ToString(_r - _x, L"%.4lf") + unit
+				+ L";height:" + XmlUtils::ToString(_b - _y, L"%.4lf") + unit + L";";
+
+			double dKoefX = 21600.0 / (std::max)(_r - _x, 0.0001);
+			double dKoefY = 21600.0 / (std::max)(_b - _y, 0.0001);
+			std::wstring strPath;
+			for (int k = 0; k < nSize; k += 2)
+			{
+				std::wstring op = k == 0 ? L"m" : (L"v:curve" == strNameNode ? (k == 2 ? L"c" : L",") : L"l");
+				strPath += op + std::to_wstring((int)(dKoefX * (pts[k] - _x) + 0.5)) + L"," + std::to_wstring((int)(dKoefY * (pts[k + 1] - _y) + 0.5));
+			}
+			strPath += L"e";
+
+			pPPTShape = new CPPTShape();
+			pPPTShape->SetShapeType((PPTShapes::ShapeType)1);
+			// otherwise rect will be preserved
+			pPPTShape->m_eType = PPTShapes::sptCustom;
+
+			pPPTShape->LoadPathList(strPath);
+			pPPTShape->ReCalculate();
+			bIsNeedCoordSizes = false;
+		}
+	}
+	else if (L"v:arc" == strNameNode)
+	{
+		// specduck: the part of the ellipse filling the shape's box from startangle to endangle, in degrees clockwise
+		// from 12 o'clock (as Word draws it), as cubic Bezier pieces of at most 90 degrees.
+		double dStart = 0, dEnd = 90;
+		std::wstring sStart = oNodeShape.GetAttribute(L"startangle"), sEnd = oNodeShape.GetAttribute(L"endangle");
+		if (!sStart.empty()) dStart = XmlUtils::GetDouble(sStart);
+		if (!sEnd.empty()) dEnd = XmlUtils::GetDouble(sEnd);
+		// one turn: a huge angle never ended the loop below, and made millions of pieces
+		dStart = std::isfinite(dStart) ? fmod(dStart, 360) : 0;
+		dEnd = std::isfinite(dEnd) ? fmod(dEnd, 360) : 90;
+		double dSweep = dEnd - dStart;
+		while (dSweep <= 0) dSweep += 360;
+
+		pPPTShape = new CPPTShape();
+		pPPTShape->SetShapeType((PPTShapes::ShapeType)1);
+		pPPTShape->m_eType = PPTShapes::sptCustom;
+		auto at = [](double deg, double r) {
+			double a = deg * M_PI / 180;
+			return std::to_wstring((int)(10800 + r * sin(a) + 0.5)) + L"," + std::to_wstring((int)(10800 - r * cos(a) + 0.5));
+		};
+		int pieces = (int)ceil(dSweep / 90);
+		double step = dSweep / pieces, k = 4.0 / 3 * tan(step * M_PI / 720);
+		std::wstring strPath = L"m" + at(dStart, 10800);
+		for (int i = 0; i < pieces; ++i)
+		{
+			double a0 = dStart + i * step, a1 = a0 + step, r = 10800 * sqrt(1 + k * k);
+			double d0 = atan(k) * 180 / M_PI;
+			strPath += L"c" + at(a0 + d0, r) + L"," + at(a1 - d0, r) + L"," + at(a1, 10800);
+		}
+		pPPTShape->LoadPathList(strPath + L"e");
+		pPPTShape->ReCalculate();
+		bIsNeedCoordSizes = false;
 	}
     else if (L"v:shape" == strNameNode)
 	{
@@ -2027,6 +2119,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			strType = strType.substr(1);
 
 			std::map<std::wstring, CShapePtr>::iterator pFind = m_mapShapeTypes.find(strType);
+			std::map<std::wstring, unsigned int>::iterator pBuiltin = m_mapBuiltinShapeTypes.find(strType);
+			if (pBuiltin != m_mapBuiltinShapeTypes.end())
+				nBuiltinSpt = pBuiltin->second;
 			if (m_mapShapeTypes.end() != pFind)
 			{
                 CBaseShapePtr base_shape_type = pFind->second->getBaseShape();
@@ -2080,10 +2175,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			LoadCoordPos(oNodeShape, oShapeElem.m_pShape); //for path calculate
 		}
 	}
-	pPPTShape->LoadFromXMLShapeType(oNodeShape);
-
-	if (pPPTShape != NULL)
-	{	
+	if (pPPTShape != NULL)	// specduck: NULL for a v:polyline with fewer than two points or an odd count of coordinates
+	{
+		pPPTShape->LoadFromXMLShapeType(oNodeShape);
 		if (!bSetShape)
 		{
 			oShapeElem.m_pShape->setBaseShape(CBaseShapePtr(pPPTShape));
@@ -2112,8 +2206,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 		{
 			bPicture = true;
 		}
-		else if (pPPTShape->m_eType == PPTShapes::sptCNotchedCircularArrow)
+		else if (pPPTShape->m_eType == PPTShapes::sptCNotchedCircularArrow && oNodeShape.GetAttribute(L"path").empty())
 		{
+			// specduck: only the obsolete type itself; Word writes o:spt="100" on every freeform with its own path
 			bHidden = true;
 		}
         std::wstring strXmlPPTX;
@@ -2155,6 +2250,19 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 			else
 			{
 				strXmlPPTX = oShapeElem.ConvertPPTShapeToPPTX(true);
+				if (nBuiltinSpt)
+				{
+					// specduck: Word draws its own shapetype as the preset (see IsWordBuiltinShapeType)
+					PPTX::CCSS oSize;
+					std::wstring sSizeStyle = oNodeShape.GetAttribute(L"style");
+					oSize.LoadFromString2(sSizeStyle);
+					SimpleTypes::CPoint parser;
+					double w = oSize.m_mapSettings.count(L"width") ? parser.FromString(oSize.m_mapSettings[L"width"]) : 0;
+					double h = oSize.m_mapSettings.count(L"height") ? parser.FromString(oSize.m_mapSettings[L"height"]) : 0;
+					std::wstring preset = WordPresetGeometry(nBuiltinSpt, pPPTShape->m_arAdjustments, w, h);
+					if (!preset.empty())
+						strXmlPPTX = preset;
+				}
 
 				// in old shapes text rotates separately
 				pShape->oTextBoxBodyPr->upright = true;
@@ -2248,7 +2356,9 @@ void CDrawingConverter::ConvertShape(PPTX::Logic::SpTreeElem *elem, XmlUtils::CX
 
 						if (pFind != oCssStyle.m_mapProperties.end())
 						{
-							if (oCssStyle.m_arrProperties[pFind->second]->get_Value().eLayoutFlow == SimpleTypes::Vml::csslayoutflowVertical)
+							// specduck: vertical-ideographic is vertical too (Latin text turned 90 degrees clockwise, as Word draws it)
+							SimpleTypes::Vml::ECssLayoutFlow flow = oCssStyle.m_arrProperties[pFind->second]->get_Value().eLayoutFlow;
+							if (flow == SimpleTypes::Vml::csslayoutflowVertical || flow == SimpleTypes::Vml::csslayoutflowVerticalIdeographic)
 							{
 								pShape->oTextBoxBodyPr->vert = new PPTX::Limit::TextVerticalType();
 								pShape->oTextBoxBodyPr->vert->set(L"vert");
@@ -3243,6 +3353,14 @@ void CDrawingConverter::ConvertWordArtShape(PPTX::Logic::SpTreeElem* elem, XmlUt
 		// bottom: Descent
 	}
 }
+// specduck: Word writes coordorigin="13639" when y is 0
+static void ParseCoordOrigin(const std::wstring& value, LONG& x, LONG& y)
+{
+	std::vector<std::wstring> parts;
+	boost::algorithm::split(parts, value, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
+	x = !parts.empty() && !parts[0].empty() ? XmlUtils::GetInteger(parts[0]) : 0;
+	y = parts.size() >= 2 && !parts[1].empty() ? XmlUtils::GetInteger(parts[1]) : 0;
+}
 void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::CXmlNode& oNode, std::wstring* pMainProps, bool bIsTop)
 {
 	if (!result) return;
@@ -3294,7 +3412,10 @@ void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::
                 L"line"         == strNameP ||
                 L"polyline"     == strNameP ||
                 L"background"   == strNameP ||
-                L"roundrect"    == strNameP)
+                L"roundrect"    == strNameP ||
+                L"image"        == strNameP ||
+                L"curve"        == strNameP ||
+                L"arc"          == strNameP)
 			{
 				PPTX::Logic::SpTreeElem _el; 
 				ConvertShape(&_el, oNodeT, pMainProps, false);
@@ -3305,6 +3426,10 @@ void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::
 			else if (L"binData" == strNameP)
 			{
 				AddBinData(oNodeT);
+			}
+			else if (L"shapetype" == strNameP)	// specduck: defined in the group, before its shapes
+			{
+				AddShapeType(oNodeT);
 			}
 			else if (L"group" == strNameP)
 			{
@@ -3337,18 +3462,7 @@ void CDrawingConverter::ConvertGroup(PPTX::Logic::SpTreeElem *result, XmlUtils::
 		}
 	}
 
-    std::wstring strCoordOrigin = oNode.GetAttributeOrValue(L"coordorigin");
-    if (strCoordOrigin != L"")
-	{
-		std::vector<std::wstring> oArray;
-        boost::algorithm::split(oArray, strCoordOrigin, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-		if (oArray.size() >= 2)
-		{
-			lCoordOriginX = XmlUtils::GetInteger(oArray[0]);
-			lCoordOriginY = XmlUtils::GetInteger(oArray[1]);
-		}
-	}
+	ParseCoordOrigin(oNode.GetAttributeOrValue(L"coordorigin"), lCoordOriginX, lCoordOriginY);
 
 	if (bIsTop)
 	{
@@ -3456,41 +3570,12 @@ void CDrawingConverter::LoadCoordPos(XmlUtils::CXmlNode& oNode, CShapePtr pShape
 {
 	if (!pShape) return;
 
-	pShape->m_dXLogic	= 0;
-	pShape->m_dYLogic	= 0;
-
 	XmlUtils::CXmlNode oNodeTemplate;
-    if (oNode.GetNode(L"coordorigin", oNodeTemplate))
-	{
-        std::wstring strCoordSize = oNodeTemplate.GetAttributeOrValue(L"val");
-        if (!strCoordSize.empty())
-		{
-			std::vector<std::wstring> oArray;
-            boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-			if (oArray.size() >= 2)
-			{
-                pShape->m_dXLogic = XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = XmlUtils::GetInteger(oArray[1]);
-			}
-		}
-	}
-	else
-	{
-        std::wstring strCoordSize = oNode.GetAttributeOrValue(L"coordorigin");
-        if (!strCoordSize.empty())
-		{
-			std::vector<std::wstring> oArray;
-            boost::algorithm::split(oArray, strCoordSize, boost::algorithm::is_any_of(L","), boost::algorithm::token_compress_on);
-
-			if (oArray.size() >= 2)
-			{
-                pShape->m_dXLogic = XmlUtils::GetInteger(oArray[0]);
-                pShape->m_dYLogic = XmlUtils::GetInteger(oArray[1]);
-			}
-		}
-	}
-	pShape->getBaseShape()->m_oPath.SetCoordpos((LONG)pShape->m_dXLogic, (LONG)pShape->m_dYLogic);
+	LONG x, y;
+	ParseCoordOrigin(oNode.GetNode(L"coordorigin", oNodeTemplate) ? oNodeTemplate.GetAttributeOrValue(L"val") : oNode.GetAttributeOrValue(L"coordorigin"), x, y);
+	pShape->m_dXLogic = x;
+	pShape->m_dYLogic = y;
+	pShape->getBaseShape()->m_oPath.SetCoordpos(x, y);
 }
 
 
@@ -3741,10 +3826,25 @@ std::wstring CDrawingConverter::GetDrawingMainProps(XmlUtils::CXmlNode& oNode, P
 		oWriter.EndAttributes();
         oWriter.EndNode(L"wp:extent");
 
+        // specduck: Word leaves an inline VML shape's stroke room before and above it: the stroke weight taken down
+        // to a whole 2 pt (0.75 pt and 1 pt: none, 3 pt: 2 pt, 6 pt: 6 pt; measured in Word, specduck/tests/vml).
+        // Without it a thick stroke ran over the text or shape before it (syscolor-window).
+        long nStrokeRoom = 0;
+        XmlUtils::CXmlNode oNodeStrokeW = oNode.ReadNode(L"v:stroke");
+        std::wstring sStroked = oNodeStrokeW.IsValid() && !oNodeStrokeW.GetAttribute(L"on").empty()
+            ? oNodeStrokeW.GetAttribute(L"on") : oNode.GetAttribute(L"stroked");	// v:stroke on overrides, as in CheckPenShape
+        if (oNode.GetName() != L"v:group" && sStroked != L"f" && sStroked != L"false")
+        {
+            std::wstring sWeight = oNode.GetAttribute(L"strokeweight");
+            if (oNodeStrokeW.IsValid() && !oNodeStrokeW.GetAttribute(L"weight").empty())
+                sWeight = oNodeStrokeW.GetAttribute(L"weight");
+            if (!sWeight.empty())
+                nStrokeRoom = 2 * 12700 * (long)(parserPoint.FromString(sWeight) / 2 + 0.001);
+        }
         oWriter.StartNode(L"wp:effectExtent");
 		oWriter.StartAttributes();
-		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : 0);
-        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : 0);
+		oWriter.WriteAttribute(L"l", bExtendedSize ? 10795 : nStrokeRoom);
+        oWriter.WriteAttribute(L"t", bExtendedSize ? 5080 : nStrokeRoom);
         oWriter.WriteAttribute(L"r", bExtendedSize ? 28575 : 0);
         oWriter.WriteAttribute(L"b", bExtendedSize ? 26670 : 0);
 		oWriter.EndAttributes();
@@ -4374,6 +4474,154 @@ void CDrawingConverter::ConvertColor(PPTX::Logic::UniColor & uniColor, nullable_
 		uniColor.Color->Modifiers.push_back(oMod);
 	}
 }
+// specduck: an image's resolution as its file states it (PNG pHYs, JPEG JFIF), 0 when it states none
+static double ImageDpi(const std::wstring& path)
+{
+	NSFile::CFileBinary file;
+	if (path.empty() || !file.OpenFile(path)) return 0;
+	BYTE head[4096] = {0};
+	DWORD read = 0;
+	file.ReadFile(head, sizeof(head), read);
+	file.CloseFile();
+	if (read > 24 && 0 == memcmp(head, "\x89PNG", 4))
+	{
+		for (DWORD i = 8; i + 17 <= read; )
+		{
+			DWORD len = (head[i] << 24) | (head[i + 1] << 16) | (head[i + 2] << 8) | head[i + 3];
+			if (0 == memcmp(head + i + 4, "pHYs", 4) && head[i + 16] == 1)
+				return ((head[i + 8] << 24) | (head[i + 9] << 16) | (head[i + 10] << 8) | head[i + 11]) * 0.0254;
+			if (0 == memcmp(head + i + 4, "IDAT", 4) || len > read - i - 12) break;	// a corrupt length would wrap i
+			i += 12 + len;
+		}
+	}
+	else if (read > 20 && head[0] == 0xFF && head[1] == 0xD8 && 0 == memcmp(head + 6, "JFIF", 4))
+	{
+		double density = (head[14] << 8) | head[15];
+		if (head[13] == 1) return density;
+		if (head[13] == 2) return density * 2.54;
+	}
+	return 0;
+}
+// specduck: the image a VML fill names by rId
+static std::wstring FillImagePath(OOX::IFileContainer* rels, const std::wstring& rid)
+{
+	if (!rels) return L"";
+	smart_ptr<OOX::Image> image = rels->Get<OOX::Image>(OOX::RId(rid));
+	return image.IsInit() ? image->filename().GetPath() : L"";
+}
+// specduck: a pattern bitmap in its colours: light pixels foreground, dark ones background, its top-left 8x8 only (a
+// pattern brush; Word writes its patterns as 10x10 GIFs), as Word draws it (sdkjs ignores a duotone and draws presets
+// at a scale of its own). The file is written to the media temp folder; empty when that fails.
+static std::wstring RecolorPattern(const std::wstring& path, const std::wstring& tempDir, const ODRAW::CColor& fg, const ODRAW::CColor& bg)
+{
+	static int counter = 0;
+	CBgraFrame frame;
+	if (path.empty() || tempDir.empty() || !frame.OpenFile(path)) return L"";
+	int stride = frame.get_Stride();
+	// the image's top row: a negative stride (CxImage) keeps the rows bottom-up
+	const BYTE* top = frame.get_Data() + (stride < 0 ? (frame.get_Height() - 1) * -stride : 0);
+	bool rgba = frame.get_IsRGBA();
+	int w = (std::min)(frame.get_Width(), 8), h = (std::min)(frame.get_Height(), 8);
+	// the 8x8 cell repeated 32 times each way: sdkjs leaves a seam at every tile edge, which a 8-pixel tile made a grid
+	const int repeat = 32, W = w * repeat, H = h * repeat;
+	BYTE* data = new BYTE[4 * W * H];
+	for (int y = 0; y < H; ++y)
+		for (int x = 0; x < W; ++x)
+		{
+			const BYTE* px = top + (y % h) * stride + 4 * (x % w);
+			const ODRAW::CColor& c = (px[0] * 114 + px[1] * 587 + px[2] * 299 < 128000) ? bg : fg;
+			BYTE* out = data + 4 * (y * W + x);
+			out[0] = rgba ? c.R : c.B; out[1] = c.G; out[2] = rgba ? c.B : c.R; out[3] = 255;
+		}
+	CBgraFrame tile;
+	tile.put_Width(W); tile.put_Height(H); tile.put_Stride(4 * W); tile.put_IsRGBA(rgba);
+	tile.put_Data(data);	// the frame frees it
+	std::wstring out = tempDir + FILE_SEPARATOR_STR + L"specduck-pattern-" + std::to_wstring(++counter) + L".png";
+	return tile.SaveFile(out, 4) ? out : L"";
+}
+
+// specduck: Word's VML pattern bitmaps, the top-left 8x8 of the 10x10 GIF Word writes for each DrawingML pattern preset
+// (a row's high bit is its leftmost pixel, set where the pixel is dark). sdkjs ignores the duotone of a picture tile, so
+// a VML pattern whose bitmap is one of these becomes that a:pattFill (Word's menus make only these).
+static const struct { const wchar_t* prst; unsigned char rows[8]; } WordPatterns[] = {
+	{L"pct5", {0x7F, 0xFF, 0xFF, 0xFF, 0xF7, 0xFF, 0xFF, 0xFF}},
+	{L"pct10", {0x7F, 0xFF, 0xF7, 0xFF, 0x7F, 0xFF, 0xF7, 0xFF}},
+	{L"pct20", {0x77, 0xFF, 0xDD, 0xFF, 0x77, 0xFF, 0xDD, 0xFF}},
+	{L"pct25", {0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD, 0x77, 0xDD}},
+	{L"pct30", {0x55, 0xBB, 0x55, 0xEE, 0x55, 0xBB, 0x55, 0xEE}},
+	{L"pct40", {0x55, 0xAA, 0x55, 0xAE, 0x55, 0xAA, 0x55, 0xEA}},
+	{L"pct50", {0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA, 0x55, 0xAA}},
+	{L"pct60", {0x11, 0xAA, 0x44, 0xAA, 0x11, 0xAA, 0x44, 0xAA}},
+	{L"pct70", {0x88, 0x22, 0x88, 0x22, 0x88, 0x22, 0x88, 0x22}},
+	{L"pct75", {0x88, 0x00, 0x22, 0x00, 0x88, 0x00, 0x22, 0x00}},
+	{L"pct80", {0x10, 0x00, 0x01, 0x00, 0x10, 0x00, 0x01, 0x00}},
+	{L"pct90", {0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 0x80}},
+	{L"horz", {0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}},
+	{L"vert", {0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F}},
+	{L"ltHorz", {0x00, 0xFF, 0xFF, 0xFF, 0x00, 0xFF, 0xFF, 0xFF}},
+	{L"ltVert", {0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77, 0x77}},
+	{L"dkHorz", {0x00, 0x00, 0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF}},
+	{L"dkVert", {0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33, 0x33}},
+	{L"narHorz", {0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF, 0x00, 0xFF}},
+	{L"narVert", {0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA}},
+	{L"dashHorz", {0x0F, 0xFF, 0xFF, 0xFF, 0xF0, 0xFF, 0xFF, 0xFF}},
+	{L"dashVert", {0x7F, 0x7F, 0x7F, 0x7F, 0xF7, 0xF7, 0xF7, 0xF7}},
+	{L"lgGrid", {0x00, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F, 0x7F}},
+	{L"wdDnDiag", {0x3E, 0x1F, 0x8F, 0xC7, 0xE3, 0xF1, 0xF8, 0x7C}},
+	{L"wdUpDiag", {0x7C, 0xF8, 0xF1, 0xE3, 0xC7, 0x8F, 0x1F, 0x3E}},
+	{L"ltDnDiag", {0x77, 0xBB, 0xDD, 0xEE, 0x77, 0xBB, 0xDD, 0xEE}},
+	{L"ltUpDiag", {0xEE, 0xDD, 0xBB, 0x77, 0xEE, 0xDD, 0xBB, 0x77}},
+	{L"dkDnDiag", {0x33, 0x99, 0xCC, 0x66, 0x33, 0x99, 0xCC, 0x66}},
+	{L"dkUpDiag", {0xCC, 0x99, 0x33, 0x66, 0xCC, 0x99, 0x33, 0x66}},
+	{L"dashDnDiag", {0xFF, 0xFF, 0x77, 0xBB, 0xDD, 0xEE, 0xFF, 0xFF}},
+	{L"dashUpDiag", {0xFF, 0xFF, 0xEE, 0xDD, 0xBB, 0x77, 0xFF, 0xFF}},
+	{L"diagCross", {0x3C, 0x18, 0x81, 0xC3, 0xC3, 0x81, 0x18, 0x3C}},
+	{L"smCheck", {0x66, 0x99, 0x99, 0x66, 0x66, 0x99, 0x99, 0x66}},
+	{L"lgCheck", {0x0F, 0x0F, 0x0F, 0x0F, 0xF0, 0xF0, 0xF0, 0xF0}},
+	{L"smGrid", {0x00, 0x77, 0x77, 0x77, 0x00, 0x77, 0x77, 0x77}},
+	{L"dotGrid", {0x55, 0xFF, 0x7F, 0xFF, 0x7F, 0xFF, 0x7F, 0xFF}},
+	{L"smConfetti", {0x7F, 0xF7, 0xBF, 0xFD, 0xEF, 0xFE, 0xDF, 0xFB}},
+	{L"lgConfetti", {0x4E, 0xCF, 0xFC, 0xE4, 0x27, 0x3F, 0xF3, 0x72}},
+	{L"horzBrick", {0x00, 0x7F, 0x7F, 0x7F, 0x00, 0xF7, 0xF7, 0xF7}},
+	{L"diagBrick", {0xFE, 0xFD, 0xFB, 0xF7, 0xE7, 0xDB, 0xBD, 0x7E}},
+	{L"solidDmnd", {0xEF, 0xC7, 0x83, 0x01, 0x83, 0xC7, 0xEF, 0xFF}},
+	{L"openDmnd", {0x7D, 0xBB, 0xD7, 0xEF, 0xD7, 0xBB, 0x7D, 0xFE}},
+	{L"dotDmnd", {0x7F, 0xFF, 0xDD, 0xFF, 0xF7, 0xFF, 0xDD, 0xFF}},
+	{L"plaid", {0x55, 0xAA, 0x55, 0xAA, 0x0F, 0x0F, 0x0F, 0x0F}},
+	{L"sphere", {0x88, 0x76, 0x70, 0x70, 0x88, 0x67, 0x07, 0x07}},
+	{L"weave", {0x77, 0xAB, 0xDD, 0xBA, 0x77, 0xEB, 0xDD, 0xAE}},
+	{L"divot", {0xFF, 0xEF, 0xF7, 0xEF, 0xFF, 0x7F, 0xFE, 0x7F}},
+	{L"shingle", {0xFC, 0x7B, 0xB7, 0xCF, 0xF3, 0xFD, 0xFE, 0xFE}},
+	{L"wave", {0xFF, 0xE7, 0xDA, 0x3F, 0xFF, 0xE7, 0xDA, 0x3F}},
+	{L"trellis", {0x00, 0x99, 0x00, 0x66, 0x00, 0x99, 0x00, 0x66}},
+	{L"zigZag", {0x7E, 0xBD, 0xDB, 0xE7, 0x7E, 0xBD, 0xDB, 0xE7}},
+};
+static std::wstring PresetPattern(const std::wstring& path)
+{
+	CBgraFrame frame;
+	if (path.empty() || !frame.OpenFile(path) || frame.get_Width() < 8 || frame.get_Height() < 8)
+		return L"";
+	int width = frame.get_Width(), height = frame.get_Height(), stride = std::abs(frame.get_Stride());
+	for (int flipped = 0; flipped < 2; ++flipped)		// the frame may hold its rows bottom-up
+	{
+		unsigned char rows[8] = {0};
+		for (int y = 0; y < 8; ++y)
+		{
+			const BYTE* row = frame.get_Data() + (flipped ? height - 1 - y : y) * stride;
+			for (int x = 0; x < 8 && x < width; ++x)
+			{
+				const BYTE* px = row + 4 * x;
+				if (px[0] * 114 + px[1] * 587 + px[2] * 299 < 128000)
+					rows[y] |= (unsigned char)(0x80 >> x);
+			}
+		}
+		for (const auto& p : WordPatterns)
+			if (0 == memcmp(p.rows, rows, 8))
+				return p.prst;
+	}
+	return L"";
+}
+
 void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils::CXmlNode& oNode, CPPTShape* pPPTShape)
 {
 	if (!oElem) return;
@@ -4465,6 +4713,13 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 	}
 
 	XmlUtils::CXmlNode oNodeFill = oNode.ReadNode(L"v:fill");
+	// specduck: <v:fill on="f"/> turns the fill off like filled="f"
+	if (oNodeFill.IsValid() && (oNodeFill.GetAttribute(L"on") == L"f" || oNodeFill.GetAttribute(L"on") == L"false"))
+	{
+		pPPTShape->m_bIsFilled = false;
+		pSpPr->Fill.m_type = PPTX::Logic::UniFill::noFill;
+		pSpPr->Fill.Fill = new PPTX::Logic::NoFill();
+	}
 	if (pPPTShape->m_bIsFilled && oNodeFill.IsValid() && !pPPTShape->IsWordArt())
 	{
 		nullable_string sOpacity2;
@@ -4504,7 +4759,9 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 		}
 
 		nullable_string sRid;
-		XmlMacroReadAttributeBase(oNodeFill, L"o:relid", sRid);
+		XmlMacroReadAttributeBase(oNodeFill, L"r:id", sRid);	// specduck: docx writes r:id (the picture of a pattern, tile or frame)
+		if (false == sRid.IsInit())
+			XmlMacroReadAttributeBase(oNodeFill, L"o:relid", sRid);
 
 		if (false == sRid.IsInit())
 		{
@@ -4513,6 +4770,25 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 		if (false == sRid.IsInit())
 		{
 			XmlMacroReadAttributeBase(oNodeFill, L"o:relid", sRid);
+		}
+		std::wstring sFillPath = sRid.is_init() ? FillImagePath(GetRelsPtr(), *sRid) : L"";
+		// specduck: a pattern is drawn as its own bitmap recoloured (below), which keeps Word's cell size; the preset is
+		// only for when that cannot be written (sdkjs draws presets at a scale of its own)
+		if (sRid.is_init() && oType.is_init() && oType->GetValue() == SimpleTypes::filltypePattern && GetTempPath().empty())
+		{
+			std::wstring prst = PresetPattern(sFillPath);
+			if (!prst.empty())
+			{
+				PPTX::Logic::PattFill* pPattFill = new PPTX::Logic::PattFill();
+				pPattFill->m_namespace = L"a";
+				pPattFill->prst = new PPTX::Limit::PattFillVal();
+				pPattFill->prst->set(prst);
+				ConvertColor(pPattFill->fgClr, sColor, sOpacity);
+				ConvertColor(pPattFill->bgClr, sColor2, sOpacity2);
+				pSpPr->Fill.m_type = PPTX::Logic::UniFill::pattFill;
+				pSpPr->Fill.Fill = pPattFill;
+				sRid.reset();
+			}
 		}
 		if (sRid.is_init())
 		{
@@ -4535,8 +4811,25 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 			if (oType.is_init() && ((oType->GetValue() == SimpleTypes::filltypeTile) || (oType->GetValue() == SimpleTypes::filltypePattern)))
 			{
 				pBlipFill->tile = new PPTX::Logic::Tile();
+				// specduck: Word tiles the image at its own resolution, 144 dpi when the file states none
+				double dpi = ImageDpi(sFillPath);
+				pBlipFill->tile->sx = (int)(100000 * 96 / (dpi > 0 ? dpi : 144));
+				pBlipFill->tile->sy = pBlipFill->tile->sx;
 
-				if (oType->GetValue() == SimpleTypes::filltypePattern)
+				ODRAW::CColor fg, bg;
+				std::wstring recolored;
+				if (oType->GetValue() == SimpleTypes::filltypePattern
+					&& NS_DWC_Common::getColorFromString(sColor.is_init() ? *sColor : std::wstring(L"white"), fg)	// VML's default fillcolor
+					&& NS_DWC_Common::getColorFromString(sColor2.is_init() ? *sColor2 : std::wstring(L"white"), bg))
+					recolored = RecolorPattern(sFillPath, GetTempPath(), fg, bg);
+				if (!recolored.empty())
+				{
+					pBlipFill->blip->dataFilepathImage = recolored;
+					// a pattern pixel is 0.625 pt in Word (an 8-pixel cell 5 pt, measured), unlike a tiled picture
+					pBlipFill->tile->sx = (int)(100000 * 96 / 115.2);
+					pBlipFill->tile->sy = pBlipFill->tile->sx;
+				}
+				else if (oType->GetValue() == SimpleTypes::filltypePattern)
 				{
 					PPTX::Logic::Duotone* pDuotone = new PPTX::Logic::Duotone();
 
@@ -4699,7 +4992,8 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 		}
 
 
-		if ((oType.IsInit() && oType->GetValue() == SimpleTypes::filltypePattern) && pSpPr->Fill.m_type != PPTX::Logic::UniFill::blipFill)
+		if ((oType.IsInit() && oType->GetValue() == SimpleTypes::filltypePattern) && pSpPr->Fill.m_type != PPTX::Logic::UniFill::blipFill
+			&& pSpPr->Fill.m_type != PPTX::Logic::UniFill::pattFill)
 		{
 			PPTX::Logic::PattFill* pPattFill = new PPTX::Logic::PattFill();
 			pPattFill->m_namespace = L"a";
@@ -4882,6 +5176,25 @@ void CDrawingConverter::CheckBrushShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils
 		}
 	}
 }
+// specduck: a VML dash list ("1 1": dash and gap lengths in line widths) as the DrawingML preset with that pattern.
+// Word draws any other list ("4 2 1 2") solid.
+static std::wstring NearestPresetDash(const std::wstring& sList)
+{
+	std::vector<double> list;
+	std::wstringstream in(sList);
+	double v;
+	while (in >> v) list.push_back(v);
+	if (list.size() < 2) return L"solid";
+	static const std::vector<std::pair<std::wstring, std::vector<double>>> presets = {
+		{L"sysDot", {1, 1}}, {L"sysDash", {3, 1}}, {L"dot", {1, 3}}, {L"dash", {4, 3}}, {L"lgDash", {8, 3}},
+		{L"sysDashDot", {3, 1, 1, 1}}, {L"dashDot", {4, 3, 1, 3}}, {L"lgDashDot", {8, 3, 1, 3}},
+		{L"sysDashDotDot", {3, 1, 1, 1, 1, 1}}, {L"lgDashDotDot", {8, 3, 1, 3, 1, 3}}};
+	for (const auto& p : presets)
+		if (p.second == list)
+			return p.first;
+	return L"solid";
+}
+
 void CDrawingConverter::CheckPenShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils::CXmlNode& oNode, CPPTShape* pPPTShape)
 {
 	if (!oElem)return;
@@ -4944,32 +5257,45 @@ void CDrawingConverter::CheckPenShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils::
     XmlUtils::CXmlNode oNodeStroke = oNode.ReadNode(L"v:stroke");
 	if (oNodeStroke.IsValid())
 	{
+		// specduck: v:stroke names its colour "color" (strokecolor is the shape's attribute); opacity and weight too
 		sStrokeColor.reset();
-        XmlMacroReadAttributeBase(oNodeStroke, L"strokecolor", sStrokeColor);
-		if (sStrokeColor.is_init())
+		XmlMacroReadAttributeBase(oNodeStroke, L"color", sStrokeColor);
+		if (!sStrokeColor.is_init())
+			XmlMacroReadAttributeBase(oNodeStroke, L"strokecolor", sStrokeColor);
+		XmlMacroReadAttributeBase(oNodeStroke, L"opacity", sStrokeOpacity);
+		if (sStrokeColor.is_init() || sStrokeOpacity.is_init())
 		{
 			pPPTShape->m_bIsStroked = true;
+			if (!pSpPr->ln.is_init())
+				pSpPr->ln = new PPTX::Logic::Ln();
+			if (!sStrokeColor.is_init())
+				XmlMacroReadAttributeBase(oNode, L"strokecolor", sStrokeColor);
+			if (!sStrokeColor.is_init())
+				sStrokeColor = std::wstring(L"black");
 
-			ODRAW::CColor color;
-			if (NS_DWC_Common::getColorFromString(*sStrokeColor, color))
-			{
-				if (!pSpPr->ln.is_init())
-					pSpPr->ln = new PPTX::Logic::Ln();
+			PPTX::Logic::SolidFill* pSolid = new PPTX::Logic::SolidFill();
+			pSolid->m_namespace = L"a";
+			ConvertColor(pSolid->Color, sStrokeColor, sStrokeOpacity);
 
-				PPTX::Logic::SolidFill* pSolid = new PPTX::Logic::SolidFill();
-				pSolid->m_namespace = L"a";
-				pSolid->Color.Color = new PPTX::Logic::SrgbClr();
-				pSolid->Color.Color->SetRGB(color.R, color.G, color.B);
-
-				pSpPr->ln->Fill.m_type = PPTX::Logic::UniFill::solidFill;
-				pSpPr->ln->Fill.Fill = pSolid;
-			}
+			pSpPr->ln->Fill.m_type = PPTX::Logic::UniFill::solidFill;
+			pSpPr->ln->Fill.Fill = pSolid;
+		}
+		nullable<SimpleTypes::CEmu> oStrokeWeight2;
+		XmlMacroReadAttributeBase(oNodeStroke, L"weight", oStrokeWeight2);
+		if (oStrokeWeight2.is_init())
+		{
+			pPPTShape->m_bIsStroked = true;
+			if (!pSpPr->ln.is_init())
+				pSpPr->ln = new PPTX::Logic::Ln();
+			pSpPr->ln->w = (int)oStrokeWeight2->ToEmu();
 		}
 
 		nullable_string sStrokeDashStyle;
         XmlMacroReadAttributeBase(oNodeStroke, L"dashstyle", sStrokeDashStyle);
 		if (sStrokeDashStyle.is_init())
 		{
+			// specduck: Word also writes "dashDot", "longDashDotDot" (TS 38.827) and reads the names in any case
+			std::transform(sStrokeDashStyle->begin(), sStrokeDashStyle->end(), sStrokeDashStyle->begin(), ::towlower);
 			pPPTShape->m_bIsStroked = true;
 
 			if (!pSpPr->ln.is_init())
@@ -4988,7 +5314,7 @@ void CDrawingConverter::CheckPenShape(PPTX::Logic::SpTreeElem* oElem, XmlUtils::
             else if (*sStrokeDashStyle == L"dashdot")		pSpPr->ln->prstDash->val = L"dashDot";
             else if (*sStrokeDashStyle == L"longdashdot")	pSpPr->ln->prstDash->val = L"lgDashDot";
             else if (*sStrokeDashStyle == L"longdashdotdot")pSpPr->ln->prstDash->val = L"lgDashDotDot";
-			else											pSpPr->ln->prstDash->val = L"solid";
+			else											pSpPr->ln->prstDash->val = NearestPresetDash(*sStrokeDashStyle);
 		}
 
 		nullable_string sStrokeLineStyle;

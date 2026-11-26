@@ -1033,8 +1033,8 @@ public:
 					point.y = arGuides[index].m_param_value3;
 				}
 			}
-			if ((size_t)point.y > *cy)	point.y &= *cy;
-			if ((size_t)point.x > *cx)	point.x &= *cx;
+			// specduck: a vertex may lie outside the coordinate box (a Bezier control point); masking it with the box
+			// size (-40 & 100 = 64) bent every such curve
 
 			m_arPoints.push_back(point);
 		}

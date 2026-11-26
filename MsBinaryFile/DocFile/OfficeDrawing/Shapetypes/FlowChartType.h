@@ -387,6 +387,21 @@ namespace DocFileFormat
 		}
 	};
 
+	// specduck: as Word writes it
+	class FlowChartOfflineStorage : public ShapeType
+	{
+	public:
+		FlowChartOfflineStorage () : ShapeType(msosptFlowChartOfflineStorage)
+		{
+			ShapeConcentricFill	=	true;
+			Joins				=	miter;
+			Path				=	L"m,l21600,,10800,21600xem8638,17278nfl12960,17278e";
+
+			ConnectorLocations	=	L"10800,0;5400,10800;10800,21600;16200,10800";
+			TextBoxRectangle	=	L"5400,0,16200,10800";
+		}
+	};
+
 	class FlowChartDelay : public ShapeType
 	{
 	public:
